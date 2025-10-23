@@ -120,7 +120,7 @@ export default function BooksPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 h-12 md:h-14 px-4 rounded-l-full bg-white/95 focus:outline-none"
-              placeholder="ค้นหาเอกสารตัวเขียน…"
+              placeholder="หนังสือ…"
             />
             <button type="submit" className="px-5 md:px-6 rounded-r-full bg-[#f08a24] text-white font-bold">
               ค้นหา
