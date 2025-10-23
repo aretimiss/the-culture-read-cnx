@@ -1,0 +1,7 @@
+# Netlify Environment Variables
+# ไปที่ Netlify Dashboard → Site Settings → Environment Variables
+# แล้วเพิ่มตัวแปรเหล่านี้:
+
+REACT_APP_API_KEY_IDENTITY=your_key_identity_here
+REACT_APP_API_KEY_CREDENTIAL=your_key_credential_here
+REACT_APP_API_BASE_URL=https://z277970-rr25o5.ps07.zwhhosting.com/omekas/api/media
