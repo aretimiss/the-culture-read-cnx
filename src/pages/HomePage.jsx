@@ -62,10 +62,19 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#111518]">
+    <div
+      className="min-h-screen text-[#111518]"
+      style={{
+        backgroundImage: "url('/assets/banner.webp')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
+
       <SiteHeader />
       <ParallaxHero
-        banner="/assets/banner.webp"
+        banner=""
         onSearch={(q) => setQuery(q)}
       />
 
