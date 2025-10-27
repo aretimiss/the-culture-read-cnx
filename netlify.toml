@@ -12,3 +12,9 @@
 
 [context.production.environment]
   REACT_APP_API_BASE_URL = "https://ebookcnx.com/omekas/api"
+
+# ✅ บอก Netlify ให้รู้ว่า .mjs เป็น JS
+[[headers]]
+  for = "/*.mjs"
+  [headers.values]
+    Content-Type = "text/javascript"
