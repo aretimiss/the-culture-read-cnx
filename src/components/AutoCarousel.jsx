@@ -74,7 +74,7 @@ export default function AutoCarousel({
           </div>
         ) : (
           <div className="p-10 text-center text-sm opacity-70">
-            ไม่มีรายการ
+            loading...
           </div>
         )}
 

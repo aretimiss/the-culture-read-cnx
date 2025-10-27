@@ -1,5 +1,6 @@
 // src/pages/BooksPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
@@ -30,6 +31,7 @@ export default function BooksPage() {
   const [query, setQuery] = useState("");
   const [activeSet, setActiveSet] = useState("all");
   const [setLabels, setSetLabels] = useState({});
+  const navigate = useNavigate(); // ✅ ใช้สำหรับไปหน้าอ่าน
 
   useEffect(() => {
     (async () => {
@@ -42,7 +44,9 @@ export default function BooksPage() {
         const ids = Array.from(
           new Set(
             arr.flatMap((it) =>
-              (Array.isArray(it?.["o:item_set"]) ? it["o:item_set"] : []).map((s) => s?.["o:id"]).filter(Boolean)
+              (Array.isArray(it?.["o:item_set"]) ? it["o:item_set"] : [])
+                .map((s) => s?.["o:id"])
+                .filter(Boolean)
             )
           )
         );
@@ -112,6 +116,13 @@ export default function BooksPage() {
     return filtered;
   }, [filtered, activeSet]);
 
+  // ✅ ฟังก์ชันเปิดอ่าน → ไปหน้า /read/:id
+  const openBook = (item) => {
+    const id = item?.["o:id"];
+    if (!id) return alert("ไม่พบรหัสรายการ");
+    navigate(`/read/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#111518]">
       <SiteHeader />
@@ -162,7 +173,7 @@ export default function BooksPage() {
                   className={`text-left px-3 py-2 rounded-lg text-sm md:text-base font-medium transition ${
                     activeSet === tab.id
                       ? "bg-[#5b4a3e] text-white shadow"
-                      : "hover:bg-black/5 text-[#5b4a3e]"
+                      : "hover:bg:black/5 text-[#5b4a3e]"
                   }`}
                 >
                   {tab.label}
@@ -189,7 +200,7 @@ export default function BooksPage() {
                     <ShelfTitle>{setLabels[key] || `คอลเลกชัน #${key}`}</ShelfTitle>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-3">
                       {group.map((it) => (
-                        <BookCard key={it["o:id"]} item={it} />
+                        <BookCard key={it["o:id"]} item={it} onOpen={openBook} />
                       ))}
                     </div>
                     <ShelfBar />
@@ -200,7 +211,7 @@ export default function BooksPage() {
                   <ShelfTitle>ไม่ระบุหมวด</ShelfTitle>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-3">
                     {groupedBySet["_none"].map((it) => (
-                      <BookCard key={it["o:id"]} item={it} />
+                      <BookCard key={it["o:id"]} item={it} onOpen={openBook} />
                     ))}
                   </div>
                   <ShelfBar />
@@ -212,7 +223,7 @@ export default function BooksPage() {
               <ShelfTitle>{setLabels[String(activeSet)] || "คอลเลกชัน"}</ShelfTitle>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-3">
                 {singleShelfItems.map((it) => (
-                  <BookCard key={it["o:id"]} item={it} />
+                  <BookCard key={it["o:id"]} item={it} onOpen={openBook} />
                 ))}
               </div>
               <ShelfBar />

@@ -1,7 +1,6 @@
 // src/components/BookCard.jsx
 import React, { useEffect, useState } from "react";
-import { titleOf, thumbUrlOf } from "../lib/omekaClient"; // ← ใช้ตัวช่วยใหม่
-import { openPDFOf } from "../lib/omekaClient";
+import { titleOf, thumbUrlOf } from "../lib/omekaClient"; // ✅ ใช้เฉพาะ helper รูป/ชื่อ
 
 /** --- Placeholder fallback --- */
 function CoverPlaceholder({ label = "No cover" }) {
@@ -36,7 +35,6 @@ export default function BookCard({ item, onOpen, compact = false }) {
 
     (async () => {
       try {
-        // ดึง URL ปกจาก API (รองรับ thumbnail_display_urls และสภาพ media เป็น @id)
         const url = await thumbUrlOf(item);
         if (!active) return;
         if (url) {
@@ -48,18 +46,23 @@ export default function BookCard({ item, onOpen, compact = false }) {
       }
     })();
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [item]);
 
   const title = titleOf(item);
+
+  // ใช้ฟังก์ชันกลางในการเปิด (เรียก onOpen เท่านั้น)
+  const handleOpen = () => {
+    if (onOpen) return onOpen(item);
+    console.warn("BookCard: onOpen is not provided. No navigation performed.");
+  };
 
   /** --- โหมด compact (รายการฝั่งขวา) --- */
   if (compact) {
     return (
       <button
-        onClick={() => onOpen?.(item) ?? openPDFOf(item)}
+        type="button"
+        onClick={handleOpen}
         className="flex gap-3 w-full text-left hover:bg-black/5 rounded-xl p-2"
       >
         <div className="w-16 h-24 rounded-lg overflow-hidden bg-black/5 flex-none">
@@ -72,6 +75,7 @@ export default function BookCard({ item, onOpen, compact = false }) {
               className="w-full h-full object-cover"
               loading="lazy"
               decoding="async"
+              draggable="false"
             />
           ) : (
             <CoverPlaceholder />
@@ -88,7 +92,8 @@ export default function BookCard({ item, onOpen, compact = false }) {
   /** --- โหมดเต็ม (หน้าแสดงรายการหลัก) --- */
   return (
     <button
-      onClick={() => onOpen?.(item) ?? openPDFOf(item)}
+      type="button"
+      onClick={handleOpen}
       className="group w-full h-full text-left rounded-2xl overflow-hidden ring-1 ring-black/10 bg-white hover:shadow-xl transition"
     >
       <div className="aspect-[3/4] bg-black/5">
@@ -101,6 +106,7 @@ export default function BookCard({ item, onOpen, compact = false }) {
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
+            draggable="false"
           />
         ) : (
           <CoverPlaceholder />
