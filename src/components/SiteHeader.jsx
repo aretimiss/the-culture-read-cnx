@@ -1,87 +1,90 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-export default function SiteHeader() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const panelRef = useRef(null);
-
-  // ปิดเมนูเมื่อเปลี่ยน route หรือกด Esc / คลิกรอบนอก (กันค้าง)
+/** ปิดสกรอลเมื่อเมนูเปิด */
+function useLockBody(lock) {
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && setMenuOpen(false);
-    const onPointerDownOutside = (e) => {
-      // ถ้าคลิก/แตะนอกแผง ให้ปิด (แต่ไม่ปิดเมื่อคลิกปุ่มแฮมเบอร์เกอร์)
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        if (!e.target.closest("#hamburger-btn")) setMenuOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDownOutside);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDownOutside);
-    };
-  }, []);
+    if (!lock) return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => (document.body.style.overflow = original);
+  }, [lock]);
+}
+
+export default function SiteHeader() {
+  const [open, setOpen] = useState(false);
+  useLockBody(open);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 text-white">
-      {/* แถบหัว */}
-      <div className="relative bg-gradient-to-b from-[#5b4a3e]/80 to-[#5b4a3e]/40 backdrop-blur-lg shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 sm:px-10 py-5 md:py-6">
-          <div className="flex items-center gap-4 md:gap-6">
-            <img
-              src="/assets/logo.png"
-              alt="Logo"
-              className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/85 p-2 shadow-lg ring-1 ring-white/30"
-            />
-            <h1 className="text-lg md:text-2xl font-bold tracking-wide drop-shadow-sm">
-              The Culture Read @CNX
-            </h1>
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 h-20 flex items-center justify-between px-5 sm:px-8 lg:px-12">
+        {/* โลโก้ซ้าย */}
+        <Link to="/" className="flex items-center gap-3">
+          <img
+            src="/assets/logo.png"
+            alt="Logo"
+            className="w-20 h-20 rounded-2xl bg-white/90 p-2 shadow ring-1 ring-black/10"
+          />
+          <span className="sr-only">Home</span>
+        </Link>
+
+        {/* ปุ่ม Hamburger ขวา */}
+        <button
+          aria-label="Open menu"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/85 backdrop-blur-md shadow ring-1 ring-black/10 hover:scale-[1.03] transition"
+        >
+          <div className="space-y-1.5">
+            <span className="block w-6 h-0.5 bg-black"></span>
+            <span className="block w-6 h-0.5 bg-black"></span>
+            <span className="block w-6 h-0.5 bg-black"></span>
           </div>
+        </button>
+      </header>
 
-          {/* เมนูจอใหญ่ */}
-          <nav className="hidden md:flex items-center gap-9">
-            <Link className="navlink" to="/">หน้าหลัก</Link>
-            <Link className="navlink" to="/books">หนังสือ</Link>
-            <Link className="navlink" to="/articles">บทความ</Link>
-            <Link className="navlink" to="/events">กิจกรรม</Link>
-            <Link className="navlink" to="/about">เกี่ยวกับโครงการ</Link>
-          </nav>
+      {/* Overlay + Drawer เมนูตัวอักษรใหญ่ */}
+      <div
+        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity ${
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setOpen(false)}
+      />
 
-          {/* ปุ่มแฮมเบอร์เกอร์ (มือถือ) */}
+      <nav
+        className={`fixed top-0 right-0 h-full w-[88%] max-w-[420px] z-[70] bg-[#fffaf2] shadow-2xl ring-1 ring-black/10
+        transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}
+        aria-hidden={!open}
+      >
+        <div className="p-6 flex items-center justify-between border-b border-black/10">
+          <div className="text-2xl font-extrabold tracking-wide">Menu</div>
           <button
-            id="hamburger-btn"
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="md:hidden p-3 rounded-lg hover:bg-white/20 transition"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="w-11 h-11 rounded-xl bg-black/80 text-white"
           >
-            <span className="material-symbols-outlined text-white text-3xl">
-              {menuOpen ? "close" : "menu"}
-            </span>
+            ✕
           </button>
         </div>
-
-        {/* แผงเมนูมือถือ: วาง absolute ใต้แถบหัวเสมอ */}
-        <div
-          id="mobile-nav"
-          ref={panelRef}
-          className={[
-            "md:hidden absolute left-0 top-full w-full origin-top",
-            "bg-[#5b4a3e]/95 backdrop-blur-md border-t border-white/20",
-            "transition-[transform,opacity] duration-200 ease-out",
-            menuOpen ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0 pointer-events-none",
-          ].join(" ")}
-        >
-          <nav className="flex flex-col items-start px-8 py-4 gap-4 text-lg">
-            <Link className="navlink" to="/" onClick={() => setMenuOpen(false)}>หน้าหลัก</Link>
-            <Link className="navlink" to="/books" onClick={() => setMenuOpen(false)}>หนังสือ</Link>
-            <Link className="navlink" to="/articles" onClick={() => setMenuOpen(false)}>บทความ</Link>
-            <Link className="navlink" to="/events" onClick={() => setMenuOpen(false)}>กิจกรรม</Link>
-            <Link className="navlink" to="/about" onClick={() => setMenuOpen(false)}>เกี่ยวกับโครงการ</Link>
-          </nav>
-        </div>
-      </div>
-    </header>
+        <ul className="p-6 space-y-4">
+          {[
+            { to: "/", label: "Home" },
+            { to: "/books", label: "Books" },
+            { to: "/articles", label: "Articles" },
+            { to: "/about", label: "About" },
+          ].map((m) => (
+            <li key={m.to}>
+              <Link
+                to={m.to}
+                className="block text-2xl md:text-3xl font-bold tracking-tight hover:translate-x-1 transition"
+                onClick={() => setOpen(false)}
+              >
+                {m.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>
   );
 }

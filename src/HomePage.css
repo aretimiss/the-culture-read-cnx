@@ -57,3 +57,28 @@ h1, h2, h3, h4, h5, h6 { font-family: 'Newsreader', serif; }
 .line-clamp-3 {
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
+
+.card-soft {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1.25rem; /* 2xl */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.1) 37%,
+    rgba(0, 0, 0, 0.06) 63%
+  );
+  background-size: 400% 100%;
+  animation: shine 1.2s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+@keyframes shine {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

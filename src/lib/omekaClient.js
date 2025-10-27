@@ -1,62 +1,202 @@
 // src/lib/omekaClient.js
 import axios from "axios";
 
-/** ====== ENV & URL helpers ====== */
-const RAW_BASE = process.env.REACT_APP_API_BASE_URL || "";
-const BASE_URL = RAW_BASE.replace(/\/+$/, "");
+/** ========= ENV (รองรับ Vite/CRA) ========= */
+const isVite = typeof import.meta !== "undefined" && import.meta.env;
+const RAW_BASE =
+  (isVite ? import.meta.env.VITE_API_BASE_URL : process.env.REACT_APP_API_BASE_URL) || "";
+const KEY_ID =
+  (isVite ? import.meta.env.VITE_API_KEY_IDENTITY : process.env.REACT_APP_API_KEY_IDENTITY) || "";
+const KEY_CRED =
+  (isVite ? import.meta.env.VITE_API_KEY_CREDENTIAL : process.env.REACT_APP_API_KEY_CREDENTIAL) || "";
+const BASE_URL = RAW_BASE.trim().replace(/\/+$/, "");
+
+/** ========= Assert ========= */
+function assertEnv() {
+  if (!BASE_URL) throw new Error("Missing API base URL (.env)");
+  if (!KEY_ID || !KEY_CRED) throw new Error("Missing API keys (.env)");
+}
+
+/** ========= URL helpers ========= */
+export const api = (path) => {
+  assertEnv();
+  const clean = path.startsWith("/") ? path : `/${path}`;
+  return `${BASE_URL}${clean}`;
+};
 
 export const withKeys = (url) => {
-  const key_identity = process.env.REACT_APP_API_KEY_IDENTITY;
-  const key_credential = process.env.REACT_APP_API_KEY_CREDENTIAL;
+  assertEnv();
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}key_identity=${key_identity}&key_credential=${key_credential}`;
+  return `${url}${sep}key_identity=${encodeURIComponent(KEY_ID)}&key_credential=${encodeURIComponent(
+    KEY_CRED
+  )}`;
 };
-export const api = (path) =>
-  withKeys(`${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`);
 
-export const fetchJsonWithProxies = async (finalUrl) => {
+/** ========= Axios instance + lightweight cache ========= */
+const http = axios.create({
+  timeout: 8000,
+  headers: { Accept: "application/json" },
+});
+
+// in-memory cache (URL -> { t, data })
+const cache = new Map();
+const now = () => Date.now();
+
+/** GET with cache + graceful CORS fallbacks */
+async function getJson(url, { cacheTtlMs = 30000 } = {}) {
+  const hit = cache.get(url);
+  if (hit && now() - hit.t < cacheTtlMs) return hit.data;
+
   try {
-    const viaAllorigins = `https://api.allorigins.win/get?url=${encodeURIComponent(finalUrl)}`;
-    const r1 = await axios.get(viaAllorigins, { timeout: 15000 });
-    return JSON.parse(r1.data.contents);
-  } catch {}
-  try {
-    const viaCodetabs = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(finalUrl)}`;
-    const r2 = await axios.get(viaCodetabs, { timeout: 15000 });
-    return r2.data;
-  } catch {}
-  const r3 = await axios.get(finalUrl, { timeout: 15000 });
-  return r3.data;
-};
-
-/** ====== Small helpers ====== */
-export const titleOf = (item) =>
-  item["o:title"] || item["dcterms:title"]?.[0]?.["@value"] || "ไม่มีชื่อเอกสาร";
-
-export const descOf = (item) =>
-  item["dcterms:abstract"]?.[0]?.["@value"] ||
-  item["dcterms:description"]?.[0]?.["@value"] ||
-  "";
-
-export const thumbOf = (item) =>
-  item?.thumbnail_display_urls?.large ||
-  item?.thumbnail_display_urls?.medium ||
-  item?.thumbnail_display_urls?.square ||
-  null;
-
-export const createdOf = (item) => {
-  const iso = item?.["o:created"]?.["@value"];
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return d.toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" });
-};
-
-/** เปิด PDF ของรายการ */
-export async function openPDFOf(item) {
-  const mediaId = item?.["o:primary_media"]?.["o:id"];
-  if (!mediaId) throw new Error("ไม่พบไฟล์หลักของรายการนี้");
-  const media = await fetchJsonWithProxies(api(`/media/${mediaId}`));
-  const url = media?.["o:original_url"];
-  if (!url) throw new Error("ไม่พบ URL ของไฟล์ PDF");
-  window.open(url, "_blank");
+    const r = await http.get(url);
+    cache.set(url, { t: now(), data: r.data });
+    return r.data;
+  } catch (e1) {
+    try {
+      const via = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const r2 = await http.get(via);
+      const data =
+        typeof r2.data?.contents === "string" ? JSON.parse(r2.data.contents) : r2.data;
+      cache.set(url, { t: now(), data });
+      return data;
+    } catch (e2) {
+      const via2 = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
+      const r3 = await http.get(via2);
+      cache.set(url, { t: now(), data: r3.data });
+      return r3.data;
+    }
+  }
 }
+
+/** ========= Public fetchers (เบา) ========= */
+/**
+ * ดึง items แบบเบา: จำกัดจำนวน/เรียงลำดับ + กรอง has_media=1
+ * ไม่ embed หนัก เพียงพอสำหรับ Home/Listing
+ */
+export async function fetchItemsLite({
+  limit = 12,
+  page = 1,
+  sortBy = "created",
+  sortOrder = "desc",
+  query,
+} = {}) {
+  let path =
+    `/items?per_page=${encodeURIComponent(limit)}` +
+    `&page=${encodeURIComponent(page)}` +
+    `&sort_by=${encodeURIComponent(sortBy)}` +
+    `&sort_order=${encodeURIComponent(sortOrder)}` +
+    `&has_media=1`; // เพิ่มเพื่อโอกาสมีปกสูง
+
+  if (query && query.trim()) {
+    const q = encodeURIComponent(query.trim());
+    path +=
+      `&property[0][property]=dcterms:title&property[0][type]=contains&property[0][text]=${q}` +
+      `&property[1][property]=dcterms:description&property[1][type]=contains&property[1][text]=${q}`;
+  }
+
+  const url = withKeys(api(path));
+  return await getJson(url, { cacheTtlMs: 30000 });
+}
+
+/** อ่าน media ของ item เฉพาะเมื่อจำเป็น (lazy) */
+export async function fetchMediaForItem(itemId, { cacheTtlMs = 60000 } = {}) {
+  const url = withKeys(api(`/media?item_id=${encodeURIComponent(itemId)}`));
+  return await getJson(url, { cacheTtlMs });
+}
+
+/** หา URL PDF (ยังคงไว้สำหรับปุ่ม “เปิดอ่าน”) */
+export async function pdfUrlOf(item) {
+  const medias = Array.isArray(item?.["o:media"]) ? item["o:media"] : [];
+  for (const m of medias) {
+    const type = m?.["o:media_type"] || "";
+    const direct = m?.["o:original_url"] || m?.["o:source"];
+    if (type.includes("pdf") && direct) return direct;
+  }
+  if (medias.length) {
+    for (const ref of medias) {
+      const refId = ref?.["@id"];
+      if (!refId) continue;
+      const url = withKeys(refId);
+      try {
+        const m = await getJson(url, { cacheTtlMs: 60000 });
+        const type = m?.["o:media_type"] || "";
+        if (type.includes("pdf")) {
+          return m?.["o:original_url"] || m?.["o:source"] || null;
+        }
+      } catch {}
+    }
+  }
+  const id = item?.["o:id"];
+  if (!id) return null;
+  const list = await fetchMediaForItem(id);
+  const pdf = (Array.isArray(list) ? list : []).find((m) =>
+    (m?.["o:media_type"] || "").includes("application/pdf")
+  );
+  return pdf?.["o:original_url"] || pdf?.["o:source"] || null;
+}
+
+/** เปิด PDF */
+export async function openPDFOf(item) {
+  const url = await pdfUrlOf(item);
+  if (!url) throw new Error("ไม่พบไฟล์ PDF");
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+/** ========= ตัวช่วยดึงรูปปกจาก API (รองรับ thumbnail_display_urls) ========= */
+const thumbCache = new Map();
+
+/**
+ * คืน URL ปกของ item:
+ * 1) item.thumbnail_display_urls (medium > large > square > original)
+ * 2) media ที่ฝังมาและเป็น image + thumbnail_display_urls
+ * 3) media เป็น @id → ดึงมาแบบเบา แล้วคัดตามข้อ 2
+ */
+export async function thumbUrlOf(item) {
+  const itemId = item?.["o:id"];
+  if (!itemId) return null;
+  if (thumbCache.has(itemId)) return thumbCache.get(itemId);
+
+  // (1) item-level thumbnails (ตรงกับ JSON ของคุณ)
+  const itThumb = item?.thumbnail_display_urls;
+  if (itThumb) {
+    const best = itThumb.medium || itThumb.large || itThumb.square || itThumb.original || null;
+    if (best) { thumbCache.set(itemId, best); return best; }
+  }
+
+  // (2) media ฝังมา
+  const medias = Array.isArray(item?.["o:media"]) ? item["o:media"] : [];
+  for (const m of medias) {
+    const mt = m?.["o:media_type"] || "";
+    const t = m?.thumbnail_display_urls;
+    if (mt.startsWith("image/") && t) {
+      const best = t.medium || t.large || t.square || m?.["o:original_url"] || null;
+      if (best) { thumbCache.set(itemId, best); return best; }
+    }
+  }
+
+  // (3) media เป็นลิงก์ @id → ดึงรายละเอียด
+  for (const ref of medias) {
+    const refId = ref?.["@id"];
+    if (!refId) continue;
+    try {
+      const m = await getJson(withKeys(refId), { cacheTtlMs: 60000 });
+      const mt = m?.["o:media_type"] || "";
+      const t = m?.thumbnail_display_urls;
+      const best = t?.medium || t?.large || t?.square || (mt.startsWith("image/") ? m?.["o:original_url"] : null) || null;
+      if (best) { thumbCache.set(itemId, best); return best; }
+    } catch {}
+  }
+
+  thumbCache.set(itemId, null);
+  return null;
+}
+
+/** ========= โปรเปอร์ตีทั่วไป ========= */
+export const titleOf = (it) =>
+  it?.["o:title"] || it?.["dcterms:title"]?.[0]?.["@value"] || `#${it?.["o:id"] || ""}`;
+
+export const descOf = (it) =>
+  it?.["dcterms:description"]?.[0]?.["@value"] || "";
+
+/** ========= export fetch แบบเดิมเพื่อความเข้ากันได้ ========= */
+export const fetchJsonWithProxies = async (finalUrl) => getJson(finalUrl, { cacheTtlMs: 30000 });
