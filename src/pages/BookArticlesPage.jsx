@@ -49,7 +49,7 @@ export default function BookArticlesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#faf7f2]">
+      <div className="min-h-screen text-[#111518]">
         <SiteHeader />
         <div className="flex-1 grid place-items-center text-[#7b6c61]">กำลังโหลด…</div>
         <Footer />
@@ -58,7 +58,7 @@ export default function BookArticlesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#111518]">
+    <div className="min-h-screen text-[#111518]">
       <SiteHeader />
       <FullscreenHeroCarousel items={books} />
 
@@ -71,11 +71,10 @@ function FullscreenHeroCarousel({ items = [] }) {
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
 
-  // ความสูงสไลด์: รองรับ dynamic viewport
+  // ความสูงสไลด์: หัก header ออกด้วย dvh
   const slideStyle = { "--headerH": "72px", height: "calc(100dvh - var(--headerH))" };
 
   const withAlpha = (hex, alpha = 0.9) => {
-    // รองรับ #rgb / #rrggbb
     let h = hex.replace("#", "");
     if (h.length === 3) h = h.split("").map(c => c + c).join("");
     const r = parseInt(h.slice(0, 2), 16);
@@ -84,37 +83,34 @@ function FullscreenHeroCarousel({ items = [] }) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  // อัปเดต index ตามการเลื่อนแนวตั้ง
   const onScroll = () => {
     const el = trackRef.current;
     if (!el) return;
-    const i = Math.round(el.scrollLeft / el.clientWidth);
+    const i = Math.round(el.scrollTop / el.clientHeight);
     setIndex(i);
   };
-  const onWheel = (e) => {
-    const el = trackRef.current;
-    if (!el) return;
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    }
-  };
+
   const scrollTo = (i) => {
     const el = trackRef.current;
     if (!el) return;
     const next = Math.max(0, Math.min(items.length - 1, i));
-    el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+    el.scrollTo({ top: next * el.clientHeight, behavior: "smooth" });
     setIndex(next);
   };
 
   useEffect(() => {
     const h = (e) => {
-      if (e.key === "ArrowRight") scrollTo(index + 1);
-      if (e.key === "ArrowLeft") scrollTo(index - 1);
+      if (e.key === "ArrowDown" || e.key === "PageDown") scrollTo(index + 1);
+      if (e.key === "ArrowUp" || e.key === "PageUp") scrollTo(index - 1);
+      if (e.key === "Home") scrollTo(0);
+      if (e.key === "End") scrollTo(items.length - 1);
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [index]);
+  }, [index, items.length]);
 
+  // เตรียมสไลด์ (ผูกสี/ข้อความตามพาเลตต์ของสไลด์นั้น ๆ)
   const slides = useMemo(
     () =>
       items.map((book, i) => {
@@ -131,18 +127,18 @@ function FullscreenHeroCarousel({ items = [] }) {
           "";
         const cover = toHttps(rawThumb) || "/assets/placeholder.webp";
 
-        const { bg, text } = BG_PALETTE[i % BG_PALETTE.length];
+        // พาเลตต์ของสไลด์นี้
+        const { text } = BG_PALETTE[i % BG_PALETTE.length];
         const isLightText = text.toLowerCase() === "#ffffff";
 
         return (
           <section
             key={id}
-            className="snap-start shrink-0 w-full relative overflow-hidden"
-            style={{ ...slideStyle, background: bg, color: text }}
+            className="snap-start w-full relative overflow-hidden"
+            style={slideStyle}
           >
             {/* ===== MOBILE (<= md) ===== */}
-            <div className="md:hidden relative h-full">
-              {/* ปกใหญ่ */}
+            <div className="md:hidden relative h-full" style={{ color: text }}>
               <div className="absolute inset-x-0 top-[10dvh] bottom-[22dvh]">
                 <div className="relative h-full w-full">
                   <img
@@ -156,17 +152,11 @@ function FullscreenHeroCarousel({ items = [] }) {
                 </div>
               </div>
 
-              {/* ชื่อเรื่อง — ใช้สีจาก palette */}
-             
-
-              {/* ปุ่ม Discover สลับสไตล์ตามสีข้อความ */}
               <button
                 onClick={() => navigate(`/book/${id}`)}
                 className={`absolute left-1/2 -translate-x-1/2 bottom-[calc(20px+env(safe-area-inset-bottom))]
                            h-12 min-w-[210px] px-6 rounded-full font-semibold shadow-[0_12px_24px_rgba(0,0,0,0.22)] active:translate-y-[1px] ${
-                             isLightText
-                               ? "bg-white text-[#5b4a3e]"
-                               : "bg-[#d8653b] text-white"
+                             isLightText ? "bg-white text-[#5b4a3e]" : "bg-[#d8653b] text-white"
                            }`}
               >
                 <span className="align-middle">Discover</span>
@@ -175,9 +165,8 @@ function FullscreenHeroCarousel({ items = [] }) {
             </div>
 
             {/* ===== DESKTOP (md+) ===== */}
-            <div className="hidden md:grid h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid-cols-2 gap-8 items-center">
-              {/* ซ้าย: ข้อความ + ปุ่ม — ใช้สีพาเลตต์ */}
-              <div className="drop-shadow-[0_1px_0_rgba(0,0,0,0.1)]" style={{ color: text }}>
+            <div className="hidden md:grid h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid-cols-2 gap-8 items-center" style={{ color: text }}>
+              <div className="drop-shadow-[0_1px_0_rgba(0,0,0,0.1)]">
                 <h2
                   className="font-extrabold leading-[0.95]"
                   style={{ fontSize: "clamp(2.2rem, 4vw + 1.5rem, 6rem)" }}
@@ -212,7 +201,6 @@ function FullscreenHeroCarousel({ items = [] }) {
                 </div>
               </div>
 
-              {/* ขวา: ปก */}
               <div className="relative">
                 <div className="relative mx-auto w-[85%] lg:w-[78%] aspect-[3/4]">
                   <img
@@ -240,42 +228,63 @@ function FullscreenHeroCarousel({ items = [] }) {
     );
   }
 
+  // สีพื้นหลังเปลี่ยนตาม index ด้วย transition
+  const { bg } = BG_PALETTE[index % BG_PALETTE.length];
+
   return (
-    <div className="relative">
-      {/* แทร็กสไลด์แนวนอนเต็มจอ */}
+    <div className="relative z-10" style={{ ...slideStyle }}>
+      {/* พื้นหลัง fixed + transition สี (หรือสลับเป็น gradient ได้) */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          background: `linear-gradient(145deg, ${bg} 0%, rgba(0,0,0,0.06) 100%)`,
+          transition: "background 500ms ease",
+        }}
+      />
+
+      {/* แทร็กสไลด์แนวตั้งเต็มจอ */}
       <div
         ref={trackRef}
         onScroll={onScroll}
-        onWheel={onWheel}
-        className="snap-x snap-mandatory overflow-x-auto overflow-y-hidden w-full
-                   [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x"
-        style={slideStyle}
+        className="snap-y snap-mandatory overflow-y-auto overflow-x-hidden h-full
+                   [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-y relative z-10"
       >
-        <div className="flex w-max" style={{ height: "100%", minWidth: "100%" }}>
+        <div className="block" style={{ minHeight: "100%" }}>
           {slides}
         </div>
       </div>
 
-      {/* ลูกศร (md+) */}
-      <div className="pointer-events-none absolute inset-y-0 left-2 right-2 hidden md:flex items-center justify-between">
+      {/* ปุ่มนำทางแนวตั้ง (สวยขึ้นด้วย SVG + glass) */}
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-20">
         <button
-          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full bg-white/90 shadow ring-1 ring-black/10 hover:bg-white transition"
+          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
+                     bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
           onClick={() => scrollTo(index - 1)}
-          aria-label="Prev"
+          aria-label="Previous"
+          title="Previous"
         >
-          ‹
+          {/* Chevron Up */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 15l6-6 6 6" />
+          </svg>
         </button>
+
         <button
-          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full bg-white/90 shadow ring-1 ring-black/10 hover:bg-white transition"
+          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
+                     bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
           onClick={() => scrollTo(index + 1)}
           aria-label="Next"
+          title="Next"
         >
-          ›
+          {/* Chevron Down */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 9l-6 6-6-6" />
+          </svg>
         </button>
       </div>
 
-      {/* ดอท */}
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(16px+env(safe-area-inset-bottom))] flex gap-2">
+      {/* ดอทแนวตั้งด้านขวา */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-20">
         {items.map((_, i) => (
           <button
             key={i}
@@ -284,11 +293,10 @@ function FullscreenHeroCarousel({ items = [] }) {
               index === i ? "w-8 bg-white" : "w-2.5 bg-white/60 hover:bg-white"
             }`}
             aria-label={`Go to slide ${i + 1}`}
+            title={`Go to slide ${i + 1}`}
           />
         ))}
       </div>
     </div>
   );
 }
-
-
