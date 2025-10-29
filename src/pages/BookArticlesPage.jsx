@@ -61,8 +61,7 @@ export default function BookArticlesPage() {
     <div className="min-h-screen bg-[#faf7f2] text-[#111518]">
       <SiteHeader />
       <FullscreenHeroCarousel items={books} />
-      <Footer />
-      <BackToTop />
+
     </div>
   );
 }
@@ -158,12 +157,7 @@ function FullscreenHeroCarousel({ items = [] }) {
               </div>
 
               {/* ชื่อเรื่อง — ใช้สีจาก palette */}
-              <h2
-                className="absolute left-1/2 -translate-x-1/2 top-[38dvh] text-center font-extrabold leading-none drop-shadow px-3"
-                style={{ color: text, fontSize: "clamp(1.8rem, 8vw, 2.8rem)" }}
-              >
-                {title}
-              </h2>
+             
 
               {/* ปุ่ม Discover สลับสไตล์ตามสีข้อความ */}
               <button
