@@ -1,367 +1,230 @@
-// src/pages/ParallaxBookDetail.jsx
+// src/pages/BookShowcaseDelassusStyle.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
 import { api, fetchJsonWithProxies, titleOf } from "../lib/omekaClient";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 
-/** helpers */
-const getList = (item, key) => (Array.isArray(item?.[key]) ? item[key] : []);
-const getVal = (item, key, fallback = "-") =>
-  item?.[key]?.[0]?.["@value"] ?? fallback;
-const normalizeHttps = (raw) =>
-  raw ? (raw.startsWith("http://") ? raw.replace(/^http:/, "https:") : raw) : "";
+/** Utility helpers */
+const getVal = (item, key, fallback = "-") => item?.[key]?.[0]?.["@value"] ?? fallback;
+const normalizeHttps = (raw) => (raw ? (raw.startsWith("http://") ? raw.replace(/^http:/, "https:") : raw) : "");
 
-// ตรวจจับมือถือ (UA + viewport)
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+/** Small anchor-dot nav like Delassus */
+function SectionDots({ sections }) {
+  const [active, setActive] = useState(0);
   useEffect(() => {
-    const uaIsMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const mq = window.matchMedia("(max-width: 768px)");
-    const update = () => setIsMobile(uaIsMobile || mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return isMobile;
-};
+    const els = sections.map((s) => document.getElementById(s.id));
+    const io = new IntersectionObserver(
+      (entries) => {
+        const vis = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (vis[0]) {
+          const idx = els.findIndex((el) => el === vis[0].target);
+          if (idx >= 0) setActive(idx);
+        }
+      },
+      { root: null, threshold: [0.2, 0.5, 0.8] }
+    );
+    els.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [sections]);
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  return (
+    <div className="hidden md:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-3">
+      {sections.map((s, i) => (
+        <button
+          key={s.id}
+          aria-label={`Go to ${s.label}`}
+          onClick={() => scrollTo(s.id)}
+          className={`w-3.5 h-3.5 rounded-full ring-1 ring-[#d6c8bb] transition-all ${
+            i === active ? "bg-[#d8653b] scale-110" : "bg-[#efe7dd] hover:bg-[#e5d7ca]"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
-export default function ParallaxBookDetail() {
-  const { id } = useParams();
+/** Responsive image with gentle parallax */
+function ParallaxImage({ src, alt, className = "" }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -30]);
+  const smoothY = useSpring(y, { stiffness: 100, damping: 20 });
+  return (
+    <motion.figure
+      ref={ref}
+      style={{ y: smoothY }}
+      className={`overflow-hidden rounded-3xl ring-1 ring-[#eadfce] shadow-sm ${className}`}
+    >
+      <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+    </motion.figure>
+  );
+}
+
+export default function BookShowcaseDelassusStyle() {
+  const { id } = useParams(); // optional: /showcase/:id
   const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [shiftRight, setShiftRight] = useState(false); // เมื่อเลื่อนลง ให้ปกย้ายไปฝั่งขวา
-  const isMobile = useIsMobile();
+  const [loading, setLoading] = useState(true);
 
-  // สำหรับวัดความสูงของกล่องรายละเอียด -> ทำให้ความสูงของปกเท่ากัน (desktop)
-  const sentinelRef = useRef(null);
-  const detailRef = useRef(null);
-  const [heroDetailH, setHeroDetailH] = useState(null);
-
-  // โหลดข้อมูล
   useEffect(() => {
-    let alive = true;
+    if (!id) { setLoading(false); return; }
+    let keep = true;
     (async () => {
       try {
         setLoading(true);
-        setErr("");
         const data = await fetchJsonWithProxies(api(`/items/${id}`));
-        if (!alive) return;
+        if (!keep) return;
         setItem(data);
-        const t = titleOf(data) || data?.["o:title"] || "รายละเอียดหนังสือ";
-        document.title = `${t} · Parallax Detail`;
+        document.title = `${titleOf(data) || data?.["o:title"] || "Book"} · Showcase`;
       } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "โหลดข้อมูลไม่สำเร็จ");
-      } finally {
-        if (alive) setLoading(false);
-      }
+        if (keep) setErr(e?.message || "โหลดข้อมูลไม่สำเร็จ");
+      } finally { if (keep) setLoading(false); }
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { keep = false; };
   }, [id]);
 
-  // Toggle shiftRight เมื่อหน้าจอเลื่อนผ่านจุดเริ่มต้นของเนื้อหา descriptions
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const e = entries[0];
-        // descriptions เริ่มเข้าจอ -> ปกย้ายฝั่ง
-        setShiftRight(e.isIntersecting);
-      },
-      { root: null, threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  // วัดความสูงกล่องรายละเอียด เพื่อเซ็ตความสูงปกให้เท่ากัน (เฉพาะ desktop)
-  useEffect(() => {
-    const target = detailRef.current;
-    if (!target) return;
-
-    const measure = () => setHeroDetailH(target.offsetHeight);
-    measure();
-
-    // รองรับเปลี่ยนขนาด/รีเฟรชเนื้อหา
-    const ro = new ResizeObserver(measure);
-    ro.observe(target);
-    window.addEventListener("resize", measure);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [detailRef, item]);
-
+  // Map metadata → UI fields
   const meta = useMemo(() => {
     if (!item) return {};
-    return {
-      title: titleOf(item) || item?.["o:title"],
-      creator: getVal(item, "dcterms:creator"),
-      date: getVal(item, "dcterms:date"),
-      extent: getVal(item, "dcterms:extent", ""),
-      identifier: getVal(item, "dcterms:identifier", ""),
-      type: getVal(item, "dcterms:type", ""),
-      format: getVal(item, "dcterms:format", ""),
-      publisher: getVal(item, "dcterms:publisher", ""),
-      language: getVal(item, "dcterms:language", ""),
-      rights: getVal(item, "dcterms:rights", ""),
-      thumb:
-        item?.thumbnail_display_urls?.large ||
-        item?.thumbnail_display_urls?.medium ||
-        "/assets/placeholder.webp",
-    };
+    const cover =
+      item?.thumbnail_display_urls?.large || item?.thumbnail_display_urls?.medium || "/assets/placeholder.webp";
+    const lang = getVal(item, "dcterms:language", "und");
+    const publisher = getVal(item, "dcterms:publisher", "-");
+    const date = getVal(item, "dcterms:date", "-");
+    const creator = getVal(item, "dcterms:creator", "-");
+    const type = getVal(item, "dcterms:type", "Book");
+    const extent = getVal(item, "dcterms:extent", "");
+    const rights = getVal(item, "dcterms:rights", "");
+    const descList = Array.isArray(item?.["dcterms:description"]) ? item["dcterms:description"].map((d)=>d?.["@value"]) : [];
+    return { cover, lang, publisher, date, creator, type, extent, rights, title: titleOf(item) || item?.["o:title"], descList };
   }, [item]);
 
-  const descriptions = useMemo(() => {
-    const arr = Array.isArray(item?.["dcterms:description"])
-      ? item["dcterms:description"]
-      : [];
-    return arr
-      .map((d) => (typeof d?.["@value"] === "string" ? d["@value"].trim() : ""))
-      .filter(Boolean);
-  }, [item]);
+  const sections = [
+    { id: "ov", label: "Overview" },
+    { id: "facts", label: "Key Facts" },
+    { id: "author", label: "Author" },
+    { id: "excerpt", label: "Excerpts" },
+    { id: "gallery", label: "Gallery" },
+    { id: "cta", label: "Read" },
+  ];
 
-  const primaryPdfUrl = useMemo(() => {
-    const mediaArr = Array.isArray(item?.["o:media"]) ? item["o:media"] : [];
-    if (mediaArr.length === 0) return "";
-    const firstId = mediaArr[0]?.["o:id"];
-    return firstId ? `/read/${id}` : "";
-  }, [item, id]);
+  // Page shell
+  return (
+    <div className="min-h-screen bg-[#faf7f2] text-[#1b1b1b]">
+      <SiteHeader />
+      <SectionDots sections={sections} />
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#faf7f2]">
-        <SiteHeader />
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          <div className="h-8 w-40 bg-[#e7d8c9] rounded mb-4 animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-[60vh] bg-[#efe4d9] rounded-3xl animate-pulse" />
-            <div className="space-y-3">
-              <div className="h-7 w-3/4 bg-[#efe4d9] rounded animate-pulse" />
-              <div className="h-7 w-2/3 bg-[#efe4d9] rounded animate-pulse" />
-              <div className="h-40 w-full bg-[#efe4d9] rounded animate-pulse" />
+      {/* HERO */}
+      <header id="ov" className="pt-28 md:pt-32 pb-8">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 grid md:grid-cols-2 gap-6 md:gap-10 items-center">
+          <ParallaxImage src={normalizeHttps(meta.cover)} alt={meta.title || "cover"} className="aspect-[3/4]" />
+          <div className="">
+            <p className="text-sm tracking-widest uppercase text-[#a5866e] mb-3">Featured Book</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold leading-tight text-[#5b4a3e]">{meta.title || "Your Book Title"}</h1>
+            <p className="mt-4 text-[15px] leading-7 text-[#5b4a3e] opacity-90 max-w-prose">
+              {meta.descList?.[0] || "A striking showcase section with clean typography and generous white space, inspired by Delassus."}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {[meta.type || "Book", meta.lang || "und", meta.date || "-"].map((t) => (
+                <span key={t} className="px-3 py-1 rounded-full bg-[#fffaf3] ring-1 ring-[#eadfce] text-sm text-[#5b4a3e]">{t}</span>
+              ))}
+            </div>
+            <div className="mt-8 flex gap-3 flex-wrap">
+              <Link to={id ? `/read/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95">Read now</Link>
+              <Link to={id ? `/articles/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-white ring-1 ring-[#eadfce] text-[#5b4a3e] hover:bg-[#fff7ee]">Long article</Link>
             </div>
           </div>
         </div>
-        <Footer />
-      </div>
-    );
-  }
+      </header>
 
-  if (err || !item) {
-    return (
-      <div className="min-h-screen bg-[#faf7f2]">
-        <SiteHeader />
-        <main className="max-w-3xl mx-auto px-6 py-16 text-center">
-          <h1 className="text-2xl font-bold text-red-700 mb-2">เกิดข้อผิดพลาด</h1>
-          <p className="text-[#7b6c61]">{err || "ไม่พบข้อมูล"}</p>
-          <Link to="/" className="mt-6 inline-block text-[#d8653b] underline">
-            กลับหน้าแรก
-          </Link>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // สลับฝั่ง (sticky cover) เมื่อเลื่อนถึง descriptions
-  const coverColClass = shiftRight ? "md:col-start-2" : "md:col-start-1";
-  const detailColClass = shiftRight ? "md:col-start-1" : "md:col-start-2";
-
-  return (
-    <div className="min-h-screen text-[#111518] bg-[#faf7f2]">
-      <SiteHeader />
-
-      {/* HERO + ปกตรึง (sticky) */}
-      <section className="pt-28 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          {/* breadcrumb */}
-          <nav className="text-sm text-[#7b6c61] mb-4">
-            <Link to="/" className="hover:underline">
-              หน้าแรก
-            </Link>
-            <span className="mx-2">/</span>
-            <Link to="/books" className="hover:underline">
-              แนะนำหนังสือ
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-[#5b4a3e]">{meta.title}</span>
-          </nav>
-
-          {/* กริด 2 คอลัมน์: ปก (sticky) + รายละเอียด (ไม่แสดง description) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* ปก: sticky และย้ายคอลัมน์เมื่อ shiftRight = true */}
-            <div className={`${coverColClass}`}>
-              <div
-                className="md:sticky md:top-24"
-                style={{ height: isMobile ? undefined : heroDetailH || undefined }}
-              >
-                <ParallaxCover
-                  src={normalizeHttps(meta.thumb)}
-                  alt={meta.title}
-                  shiftRight={shiftRight}
-                />
-              </div>
+      {/* KEY FACTS */}
+      <section id="facts" className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 grid md:grid-cols-12 gap-6">
+          <div className="md:col-span-5">
+            <div className="rounded-3xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-4">Key facts</h2>
+              <dl className="grid grid-cols-2 gap-4 text-sm text-[#57493f]">
+                <div><dt className="opacity-60">Author</dt><dd className="font-medium">{meta.creator}</dd></div>
+                <div><dt className="opacity-60">Published</dt><dd className="font-medium">{meta.date}</dd></div>
+                <div><dt className="opacity-60">Publisher</dt><dd className="font-medium">{meta.publisher}</dd></div>
+                <div><dt className="opacity-60">Language</dt><dd className="font-medium">{meta.lang}</dd></div>
+                {meta.extent && <div><dt className="opacity-60">Extent</dt><dd className="font-medium">{meta.extent}</dd></div>}
+                {meta.rights && <div className="col-span-2"><dt className="opacity-60">Rights</dt><dd className="font-medium">{meta.rights}</dd></div>}
+              </dl>
             </div>
+          </div>
+          <div className="md:col-span-7">
+            <ParallaxImage src={normalizeHttps(meta.cover)} alt="cover large" className="aspect-[21/9]" />
+          </div>
+        </div>
+      </section>
 
-            {/* รายละเอียด: ไม่แสดง description ที่นี่ */}
-            <div className={`${detailColClass}`} ref={detailRef}>
-              <div className="rounded-3xl shadow-lg border border-[#e7d8c9]/70 bg-[#fffaf3]/90 backdrop-blur p-6 md:p-8">
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#5b4a3e] mb-3">
-                  {meta.title}
-                </h1>
-                <ul className="space-y-1 text-[15px] text-[#57493f]">
-                  <li>
-                    <span className="opacity-70">ผู้แต่ง:</span> {meta.creator}
-                  </li>
-                  <li>
-                    <span className="opacity-70">ปี/วันที่:</span> {meta.date}
-                  </li>
-                  {meta.extent && (
-                    <li>
-                      <span className="opacity-70">จำนวนหน้า:</span> {meta.extent}
-                    </li>
-                  )}
-                  {meta.identifier && (
-                    <li>
-                      <span className="opacity-70">เลขทะเบียน/ลิงก์:</span> {meta.identifier}
-                    </li>
-                  )}
-                  {meta.type && (
-                    <li>
-                      <span className="opacity-70">ประเภท:</span> {meta.type}
-                    </li>
-                  )}
-                  {meta.format && (
-                    <li>
-                      <span className="opacity-70">ฟอร์แมต:</span> {meta.format}
-                    </li>
-                  )}
-                  {meta.publisher && (
-                    <li>
-                      <span className="opacity-70">สำนักพิมพ์:</span> {meta.publisher}
-                    </li>
-                  )}
-                  {meta.language && (
-                    <li>
-                      <span className="opacity-70">ภาษา:</span> {meta.language}
-                    </li>
-                  )}
-                  {meta.rights && (
-                    <li>
-                      <span className="opacity-70">สิทธิ์:</span> {meta.rights}
-                    </li>
-                  )}
-                </ul>
-                <div className="mt-6 flex gap-3 flex-wrap">
-                  {primaryPdfUrl && (
-                    <Link
-                      to={primaryPdfUrl}
-                      className="inline-flex items-center px-4 py-2 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95 transition"
-                    >
-                      Read Now
-                    </Link>
-                  )}
-                  <Link
-                    to={`/articles/${id}`}
-                    className="inline-flex items-center px-4 py-2 rounded-xl bg-white text-[#5b4a3e] ring-1 ring-[#e7d8c9] shadow-sm hover:bg-[#fff7ee]"
-                  >
-                    เปิดบทความแบบอ่านยาว
-                  </Link>
+      {/* AUTHOR */}
+      <section id="author" className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-4">About the author</h2>
+            <p className="text-[#57493f] leading-8">
+              {meta.creator && meta.creator !== "-" ? `${meta.creator} —` : "The author —"} This section mirrors Delassus-style editorial blocks: big headings, calm colors, and soft card edges. Replace with the author's biography or context of the work.
+            </p>
+          </div>
+          <ParallaxImage src={normalizeHttps(meta.cover)} alt="author related" className="aspect-video" />
+        </div>
+      </section>
 
-                </div>
-              </div>
+      {/* EXCERPTS */}
+      <section id="excerpt" className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
+          <div className="rounded-3xl ring-1 ring-[#eadfce] bg-white p-6 md:p-10 shadow-sm">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-6">Highlighted excerpts</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {(meta.descList?.slice(0,3)?.length ? meta.descList.slice(0,3) : [
+                "An opening that sets the tone for discovery and cultural memory.",
+                "A paragraph that reveals the texture of place and people.",
+                "A passage whose cadence lingers beyond the page."
+              ]).map((t, i) => (
+                <blockquote key={i} className="rounded-2xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-5 text-[#3f342d] leading-7">
+                  <span className="text-[#d8653b] mr-2">“</span>{t}<span className="text-[#d8653b] ml-1">”</span>
+                </blockquote>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* S E N T I N E L : จุดเริ่ม descriptions เพื่อสลับฝั่งปก */}
-      <div ref={sentinelRef} className="h-4" />
-
-      {/* DESCRIPTION SECTIONS */}
-      <main className="pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-14">
-          {descriptions.length === 0 && (
-            <p className="text-center text-[#7b6c61]">
-              ยังไม่มีคำอธิบายสำหรับรายการนี้
-            </p>
-          )}
-
-          {descriptions.map((desc, idx) => {
-            const even = idx % 2 === 0;
-            // หลังปกย้ายไปขวา: บล็อกแรกอยู่ซ้าย จากนั้นสลับฟันปลา
-            const textOnLeft = shiftRight ? true : !even;
-            return (
-              <section
-                key={idx}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start"
-              >
-                <div className={textOnLeft ? "order-2 md:order-1" : "order-2 md:order-2"}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="bg-white/95 border border-[#e7d8c9] rounded-3xl shadow-md p-6 md:p-8 leading-8 text-[#3f342d]"
-                  >
-                    <h2 className="text-xl font-semibold text-[#5b4a3e] mb-3">
-                      คำอธิบาย {descriptions.length > 1 ? `(${idx + 1})` : ""}
-                    </h2>
-                    <p className="whitespace-pre-wrap">{desc}</p>
-                  </motion.div>
-                </div>
-                {/* ช่องว่างฝั่งปก (ปกอยู่ sticky ด้านบน) */}
-                <div className={textOnLeft ? "order-1 md:order-2" : "order-1 md:order-1"}>
-                  <div className="hidden md:block h-0" />
-                </div>
-              </section>
-            );
-          })}
+      {/* GALLERY */}
+      <section id="gallery" className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-6">Gallery</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <ParallaxImage key={i} src={normalizeHttps(meta.cover)} alt={`page-${i+1}`} className="aspect-[3/4]" />
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* CTA */}
+      <section id="cta" className="py-16">
+        <div className="max-w-5xl mx-auto px-5 md:px-8 text-center">
+          <div className="rounded-3xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-10 shadow">
+            <h3 className="text-2xl md:text-3xl font-bold text-[#5b4a3e]">Read the book now</h3>
+            <p className="text-[#57493f] mt-2">Open the reader or view the long-form article with annotations.</p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Link to={id ? `/read/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95">Open Reader</Link>
+              <Link to={id ? `/articles/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-white ring-1 ring-[#eadfce] text-[#5b4a3e] hover:bg-[#fff7ee]">Article</Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Footer />
       <BackToTop />
     </div>
-  );
-}
-
-/* ========= Parallax Cover (ภาพปกเดียว + sticky + parallax + glide เมื่อต้องย้ายฝั่ง) ========= */
-function ParallaxCover({ src, alt, shiftRight }) {
-  const ref = useRef(null);
-
-  // Parallax เฉพาะบริเวณภาพปก (เมื่อสกรอลผ่าน)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-
-  // ลอยขึ้น ~40px และซูมออกเล็กน้อยขณะเลื่อน
-  const y = useTransform(scrollYProgress, [0, 1], [0, -40]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1.02, 1.0]);
-
-  const smoothY = useSpring(y, { stiffness: 120, damping: 20 });
-  const smoothScale = useSpring(scale, { stiffness: 120, damping: 20 });
-
-  // เมื่อต้องย้ายฝั่ง เพิ่ม motion x เล็กน้อยให้รู้สึก “glide”
-  const glideX = useSpring(shiftRight ? 8 : 0, { stiffness: 120, damping: 20 });
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{ y: smoothY, scale: smoothScale, x: glideX }}
-      className="rounded-3xl overflow-hidden shadow-xl ring-1 ring-[#e7d8c9] bg-[#fffaf3]"
-    >
-      <img src={src} alt={alt} className="w-full h-full object-cover" />
-    </motion.div>
   );
 }
