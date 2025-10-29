@@ -1,16 +1,30 @@
 // src/pages/BookArticlesPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
 import { fetchItemsLite, titleOf, descOf } from "../lib/omekaClient";
 
-/** Tailwind helper: ซ่อนสก롤บาร์ (ใส่ไว้ที่ global.css ก็ได้)
- * .no-scrollbar::-webkit-scrollbar{display:none}
- * .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
- */
+/* helpers */
+const toHttps = (u) => (u ? (u.startsWith("http://") ? u.replace(/^http:/, "https:") : u) : "");
+const stripTags = (html = "") => {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").trim();
+};
 
+/* พาเลตต์พื้นหลังแบบสลับโทน (ปรับได้ตามชอบ) */
+const BG_PALETTE = [
+  "#ff8a3d", // citrus
+  "#f6d4b1", // cream
+  "#f0c2a8", // peach
+  "#ffd7a0", // light orange
+  "#ffe9d6", // very light
+];
+
+/* ========= หน้าใหญ่แบบ Delassus: 1 เล่มต่อ 1 สไลด์เต็มจอ ========= */
 export default function BookArticlesPage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,13 +33,12 @@ export default function BookArticlesPage() {
     (async () => {
       try {
         const res = await fetchItemsLite();
-        // เฉพาะที่มีคำอธิบาย
         const filtered = (res || []).filter(
-          (item) => Array.isArray(item["dcterms:description"]) && item["dcterms:description"].length > 0
+          (it) => Array.isArray(it["dcterms:description"]) && it["dcterms:description"].length > 0
         );
         setBooks(filtered);
-      } catch (err) {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
+      } catch (e) {
+        console.error("โหลดรายการล้มเหลว", e);
       } finally {
         setLoading(false);
       }
@@ -36,9 +49,7 @@ export default function BookArticlesPage() {
     return (
       <div className="min-h-screen flex flex-col bg-[#faf7f2]">
         <SiteHeader />
-        <div className="flex-1 flex items-center justify-center text-[#7b6c61]">
-          กำลังโหลด...
-        </div>
+        <div className="flex-1 grid place-items-center text-[#7b6c61]">กำลังโหลด…</div>
         <Footer />
       </div>
     );
@@ -47,46 +58,31 @@ export default function BookArticlesPage() {
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#111518]">
       <SiteHeader />
-      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
-        {/* HERO / Heading */}
-        <header className="mb-8 md:mb-10 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs tracking-widest uppercase text-[#7b6c61]">Curated</p>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-[#5b4a3e]">
-              Rare Books Showcase
-            </h1>
-          </div>
-          <Link
-            to="/books"
-            className="hidden sm:inline-flex items-center h-10 px-4 rounded-full bg-white ring-1 ring-[#e7d8c9] text-[#5b4a3e] hover:bg-[#fff7ee] transition shadow-sm"
-          >
-            ดูทั้งหมด
-          </Link>
-        </header>
-
-        {/* CAROUSEL */}
-        <HorizontalCarousel items={books} />
-      </main>
+      <FullscreenHeroCarousel items={books} />
       <Footer />
       <BackToTop />
     </div>
   );
 }
 
-/* ================== Horizontal Carousel (Delassus-like) ================== */
-function HorizontalCarousel({ items = [] }) {
+/* ================== Fullscreen hero carousel ================== */
+function FullscreenHeroCarousel({ items = [] }) {
   const trackRef = useRef(null);
-  const [progress, setProgress] = useState(0);
+  const [index, setIndex] = useState(0);
+  const navigate = useNavigate();
 
-  // อัปเดตแถบความคืบหน้า
-  const updateProgress = () => {
+  // ความสูงสไลด์ = เต็มหน้าจอ ลบความสูงเฮดเดอร์ ~96px
+  const slideH = "calc(100vh - 96px)";
+
+  // อัปเดต index จากการ scroll
+  const onScroll = () => {
     const el = trackRef.current;
     if (!el) return;
-    const p = el.scrollLeft / (el.scrollWidth - el.clientWidth || 1);
-    setProgress(Math.min(1, Math.max(0, p)));
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    setIndex(i);
   };
 
-  // ปรับเมาส์สกอลล์ให้เลื่อนแนวนอน
+  // ทำให้สกรอลล์แนวนอนด้วยล้อเมาส์
   const onWheel = (e) => {
     const el = trackRef.current;
     if (!el) return;
@@ -96,77 +92,98 @@ function HorizontalCarousel({ items = [] }) {
     }
   };
 
+  // ลูกศรซ้าย/ขวา
   useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    updateProgress();
-    el.addEventListener("scroll", updateProgress, { passive: true });
-    return () => el.removeEventListener("scroll", updateProgress);
-  }, []);
+    const h = (e) => {
+      if (e.key === "ArrowRight") scrollTo(index + 1);
+      if (e.key === "ArrowLeft") scrollTo(index - 1);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [index]);
 
-  // ปุ่มเลื่อน
-  const scrollByCards = (dir = 1) => {
+  const scrollTo = (i) => {
     const el = trackRef.current;
     if (!el) return;
-    const card = el.querySelector("[data-card]"); // การ์ดแรก
-    const step = card ? card.getBoundingClientRect().width + 16 : el.clientWidth * 0.8;
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
+    const next = Math.max(0, Math.min(items.length - 1, i));
+    el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+    setIndex(next);
   };
 
-  const cards = useMemo(
+  const slides = useMemo(
     () =>
-      items.map((book) => {
+      items.map((book, i) => {
         const id = book["o:id"];
-        const title = titleOf(book) || "Untitled";
+        const title = titleOf(book) || `Item #${id}`;
         const rawDesc = descOf(book) || "";
-        const desc = rawDesc.length > 160 ? rawDesc.slice(0, 160) + "…" : rawDesc;
-        const thumb =
+        const desc = (stripTags(rawDesc) || " ").slice(0, 220) + (rawDesc.length > 220 ? "…" : "");
+        const rawThumb =
           book?.thumbnail_display_urls?.large ||
           book?.thumbnail_display_urls?.medium ||
-          "/assets/placeholder.webp";
+          book?.["o:thumbnail_urls"]?.large ||
+          book?.["o:thumbnail_urls"]?.medium ||
+          "";
+        const cover = toHttps(rawThumb) || "/assets/placeholder.webp";
+        const bg = BG_PALETTE[i % BG_PALETTE.length];
 
         return (
-          <article
+          <section
             key={id}
-            data-card
-            className="snap-start shrink-0 w-[78%] sm:w-[55%] md:w-[40%] lg:w-[32%] xl:w-[28%] 
-                       bg-white/95 border border-[#e7d8c9] rounded-3xl shadow-sm 
-                       hover:shadow-lg transition-all duration-300 overflow-hidden"
+            className="snap-start shrink-0 w-full relative overflow-hidden"
+            style={{ height: slideH, backgroundColor: bg }}
           >
-            <Link to={`/book/${id}`} className="group flex flex-col h-full">
-              <div className="relative aspect-[3/4] overflow-hidden">
-                <img
-                  src={thumb}
-                  alt={title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                  loading="lazy"
-                  decoding="async"
-                />
-                {/* มุมบนซ้าย: แท็ก */}
-                <div className="absolute top-3 left-3">
-                  <span className="px-3 py-1 text-xs rounded-full bg-[#fffaf3]/90 ring-1 ring-[#eadfce] text-[#5b4a3e]">
-                    Rare Book
-                  </span>
-                </div>
-              </div>
+            {/* โทนลอยเงาเหมือน Delassus */}
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-black/5 blur-3xl pointer-events-none" />
 
-              <div className="p-4 md:p-5 flex flex-col gap-2 flex-1">
-                <h3 className="text-base md:text-lg font-semibold text-[#5b4a3e] line-clamp-2">
+            {/* คอนเทนต์สองคอลัมน์ */}
+            <div className="h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              {/* ซ้าย: ชื่อ + ปุ่ม */}
+              <div className="order-2 md:order-1 text-white drop-shadow-[0_1px_0_rgba(0,0,0,0.1)]">
+                <h2
+                  className="font-extrabold leading-[0.95]"
+                  style={{ fontSize: "clamp(2.2rem, 4vw + 1.5rem, 6rem)" }}
+                >
                   {title}
-                </h3>
-                <p className="text-sm text-[#7b6c61] line-clamp-3">{desc}</p>
+                </h2>
 
-                <div className="mt-auto pt-2 flex items-center justify-between">
-                  <span className="text-[#d8653b] font-medium">อ่านต่อ →</span>
-                  <div className="flex items-center gap-2 opacity-70 group-hover:opacity-100 transition">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#e1cdb9]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#e1cdb9]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#e1cdb9]" />
-                  </div>
+                <p className="mt-5 text-white/90 max-w-xl" style={{ fontSize: "clamp(1rem, 0.6vw + 0.9rem, 1.25rem)" }}>
+                  {desc}
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => navigate(`/book/${id}`)}
+                    className="inline-flex items-center h-12 px-6 rounded-full bg-white text-[#5b4a3e] shadow
+                               hover:opacity-95 transition font-semibold"
+                  >
+                    Discover <span className="ml-2">→</span>
+                  </button>
+                  <Link
+                    to={`/read/${id}`}
+                    className="inline-flex items-center h-12 px-6 rounded-full bg-white/20 text-white ring-1 ring-white/40
+                               hover:bg-white/25 transition"
+                  >
+                    Read now
+                  </Link>
                 </div>
               </div>
-            </Link>
-          </article>
+
+              {/* ขวา: ปกเล่มขนาดใหญ่ + เงา */}
+              <div className="order-1 md:order-2 relative">
+                <div className="relative mx-auto w-[70%] md:w-[85%] lg:w-[80%] aspect-[3/4]">
+                  <img
+                    src={cover}
+                    alt={title}
+                    className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  {/* เงาวางบนพื้น */}
+                  <div className="absolute -bottom-6 inset-x-0 mx-auto h-10 w-4/5 rounded-full bg-black/20 blur-xl opacity-40" />
+                </div>
+              </div>
+            </div>
+          </section>
         );
       }),
     [items]
@@ -174,68 +191,61 @@ function HorizontalCarousel({ items = [] }) {
 
   if (items.length === 0) {
     return (
-      <p className="text-center text-[#7b6c61]">ยังไม่มีรายการสำหรับแสดง</p>
+      <main className="pt-28 pb-16">
+        <p className="text-center text-[#7b6c61]">ยังไม่มีรายการสำหรับแสดง</p>
+      </main>
     );
   }
 
   return (
-    <section className="relative">
-      {/* แถบหัวข้อเล็กแบบแบรนด์ */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-[#d8653b]" />
-          <p className="text-sm text-[#7b6c61]">Slide to explore</p>
-        </div>
-
-        {/* ปุ่มเลื่อนซ้าย/ขวา */}
-        <div className="hidden sm:flex items-center gap-2">
-          <button
-            onClick={() => scrollByCards(-1)}
-            className="h-9 w-9 rounded-full bg-white ring-1 ring-[#eadfce] shadow hover:bg-[#fff7ee] transition"
-            aria-label="เลื่อนไปซ้าย"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() => scrollByCards(1)}
-            className="h-9 w-9 rounded-full bg-white ring-1 ring-[#eadfce] shadow hover:bg-[#fff7ee] transition"
-            aria-label="เลื่อนไปขวา"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-
-      {/* แทร็กสไลด์ */}
+    <div className="relative">
+      {/* แทร็กสไลด์เต็มจอแนวนอน */}
       <div
         ref={trackRef}
+        onScroll={onScroll}
         onWheel={onWheel}
-        className="no-scrollbar overflow-x-auto overflow-y-visible snap-x snap-mandatory"
+        className="snap-x snap-mandatory overflow-x-auto overflow-y-hidden w-full
+                   [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ height: slideH }}
       >
-        <div className="flex gap-4 md:gap-5 pr-2">
-          {cards}
-          {/* การ์ดท้าย: CTA */}
-          <div className="snap-start shrink-0 w-[60%] sm:w-[45%] md:w-[36%] lg:w-[28%] xl:w-[24%] 
-                          rounded-3xl ring-1 ring-dashed ring-[#eadfce] bg-[#fffaf3]/70 
-                          flex items-center justify-center">
-            <Link
-              to="/books"
-              className="inline-flex items-center gap-2 h-12 px-5 rounded-full bg-white ring-1 ring-[#eadfce] text-[#5b4a3e] hover:bg-[#fff7ee] transition shadow-sm"
-            >
-              ดูทั้งหมดในคลัง
-              <span aria-hidden>→</span>
-            </Link>
-          </div>
+        <div className="flex w-max" style={{ height: "100%", minWidth: "100%" }}>
+          {slides}
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-5 h-1 rounded-full bg-[#eadfce]/60 overflow-hidden">
-        <div
-          className="h-full bg-[#d8653b] transition-[width] duration-200"
-          style={{ width: `${progress * 100}%` }}
-        />
+      {/* ปุ่มลูกศรซ้าย/ขวา */}
+      <div className="pointer-events-none absolute inset-y-0 left-2 right-2 flex items-center justify-between">
+        <button
+          className="pointer-events-auto hidden sm:grid place-items-center h-11 w-11 rounded-full bg-white/90 shadow
+                     ring-1 ring-black/10 hover:bg-white transition"
+          onClick={() => scrollTo(index - 1)}
+          aria-label="Prev"
+        >
+          ‹
+        </button>
+        <button
+          className="pointer-events-auto hidden sm:grid place-items-center h-11 w-11 rounded-full bg-white/90 shadow
+                     ring-1 ring-black/10 hover:bg-white transition"
+          onClick={() => scrollTo(index + 1)}
+          aria-label="Next"
+        >
+          ›
+        </button>
       </div>
-    </section>
+
+      {/* ดอทบอกตำแหน่งสไลด์ */}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex gap-2">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => scrollTo(i)}
+            className={`h-2.5 rounded-full transition-all ${
+              index === i ? "w-8 bg-white" : "w-2.5 bg-white/60 hover:bg-white"
+            }`}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

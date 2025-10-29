@@ -214,7 +214,7 @@ export default function BookShowcaseDelassusStyle() {
         <div className="max-w-5xl mx-auto px-5 md:px-8 text-center">
           <div className="rounded-3xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-10 shadow">
             <h3 className="text-2xl md:text-3xl font-bold text-[#5b4a3e]">Read the book now</h3>
-            <p className="text-[#57493f] mt-2">ข้อความเชิยชวนบลาๆ.</p>
+            <p className="text-[#57493f] mt-2">ข้อความเชิญชวนบลาๆ.</p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <Link to={id ? `/read/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95">Open Reader</Link>
               
