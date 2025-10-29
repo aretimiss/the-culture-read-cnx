@@ -254,34 +254,62 @@ function FullscreenHeroCarousel({ items = [] }) {
         </div>
       </div>
 
-      {/* ปุ่มนำทางแนวตั้ง (สวยขึ้นด้วย SVG + glass) */}
-      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-20">
-        <button
-          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
-                     bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
-          onClick={() => scrollTo(index - 1)}
-          aria-label="Previous"
-          title="Previous"
-        >
-          {/* Chevron Up */}
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 15l6-6 6 6" />
-          </svg>
-        </button>
+      {/* ปุ่มนำทางแนวตั้ง (มีทั้ง desktop + mobile) */}
+      {/* 💻 Desktop: วางด้านซ้ายกลางจอ, 📱 Mobile: วางล่างขวา */}
+      <div>
+        {/* Desktop */}
+        <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-20">
+          <button
+            className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
+                      bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
+            onClick={() => scrollTo(index - 1)}
+            aria-label="Previous"
+            title="Previous"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
 
-        <button
-          className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
-                     bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
-          onClick={() => scrollTo(index + 1)}
-          aria-label="Next"
-          title="Next"
-        >
-          {/* Chevron Down */}
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 9l-6 6-6-6" />
-          </svg>
-        </button>
+          <button
+            className="pointer-events-auto grid place-items-center h-11 w-11 rounded-full
+                      bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
+            onClick={() => scrollTo(index + 1)}
+            aria-label="Next"
+            title="Next"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 9l-6 6-6-6" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile */}
+        <div className="pointer-events-none fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 flex md:hidden flex-col gap-3 z-30">
+          <button
+            className="pointer-events-auto grid place-items-center h-10 w-10 rounded-full
+                      bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
+            onClick={() => scrollTo(index - 1)}
+            aria-label="Prev (mobile)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
+
+          <button
+            className="pointer-events-auto grid place-items-center h-10 w-10 rounded-full
+                      bg-white/80 backdrop-blur-md shadow-lg ring-1 ring-black/10 hover:bg-white transition"
+            onClick={() => scrollTo(index + 1)}
+            aria-label="Next (mobile)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 9l-6 6-6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
+
 
       {/* ดอทแนวตั้งด้านขวา */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-20">
