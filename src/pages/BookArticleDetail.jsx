@@ -136,7 +136,7 @@ export default function BookShowcaseDelassusStyle() {
             </div>
             <div className="mt-8 flex gap-3 flex-wrap">
               <Link to={id ? `/read/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95">Read now</Link>
-              <Link to={id ? `/articles/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-white ring-1 ring-[#eadfce] text-[#5b4a3e] hover:bg-[#fff7ee]">Long article</Link>
+              
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function BookShowcaseDelassusStyle() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 grid md:grid-cols-12 gap-6">
           <div className="md:col-span-5">
             <div className="rounded-3xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-6 md:p-8 shadow-sm">
-              <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-4">Key facts</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-4">Details</h2>
               <dl className="grid grid-cols-2 gap-4 text-sm text-[#57493f]">
                 <div><dt className="opacity-60">Author</dt><dd className="font-medium">{meta.creator}</dd></div>
                 <div><dt className="opacity-60">Published</dt><dd className="font-medium">{meta.date}</dd></div>
@@ -214,10 +214,10 @@ export default function BookShowcaseDelassusStyle() {
         <div className="max-w-5xl mx-auto px-5 md:px-8 text-center">
           <div className="rounded-3xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-10 shadow">
             <h3 className="text-2xl md:text-3xl font-bold text-[#5b4a3e]">Read the book now</h3>
-            <p className="text-[#57493f] mt-2">Open the reader or view the long-form article with annotations.</p>
+            <p className="text-[#57493f] mt-2">ข้อความเชิยชวนบลาๆ.</p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <Link to={id ? `/read/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-[#d8653b] text-white shadow hover:opacity-95">Open Reader</Link>
-              <Link to={id ? `/articles/${id}` : "#"} className="px-5 py-2.5 rounded-xl bg-white ring-1 ring-[#eadfce] text-[#5b4a3e] hover:bg-[#fff7ee]">Article</Link>
+              
             </div>
           </div>
         </div>
