@@ -177,25 +177,58 @@ export default function BookShowcaseDelassusStyle() {
         </div>
       </section>
 
-      {/* EXCERPTS */}
-      <section id="excerpt" className="py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-5 md:px-8">
-          <div className="rounded-3xl ring-1 ring-[#eadfce] bg-white p-6 md:p-10 shadow-sm">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-6">Highlighted excerpts</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              {(meta.descList?.slice(0,3)?.length ? meta.descList.slice(0,3) : [
+    {/* EXCERPTS */}
+<section id="excerpt" className="py-12 md:py-16">
+  <div className="max-w-7xl mx-auto px-5 md:px-8">
+    <div className="rounded-3xl ring-1 ring-[#eadfce] bg-white p-6 md:p-10 shadow-sm">
+      <h2 className="text-2xl md:text-3xl font-bold text-[#5b4a3e] mb-6">
+        Highlighted excerpts
+      </h2>
+
+      {(() => {
+        const excerpts =
+          (meta.descList?.slice(0, 3)?.length
+            ? meta.descList.slice(0, 3)
+            : [
                 "An opening that sets the tone for discovery and cultural memory.",
                 "A paragraph that reveals the texture of place and people.",
-                "A passage whose cadence lingers beyond the page."
-              ]).map((t, i) => (
-                <blockquote key={i} className="rounded-2xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-5 text-[#3f342d] leading-7">
-                  <span className="text-[#d8653b] mr-2">“</span>{t}<span className="text-[#d8653b] ml-1">”</span>
-                </blockquote>
-              ))}
-            </div>
+                "A passage whose cadence lingers beyond the page.",
+              ]) ?? [];
+
+        // ปรับจำนวนคอลัมน์ตามจำนวน excerpt แบบ responsive
+        const gridCols =
+          excerpts.length <= 1
+            ? "grid-cols-1" // เต็มความกว้าง
+            : excerpts.length === 2
+            ? "grid-cols-1 sm:grid-cols-2" // มือถือ 1, จอใหญ่ 2
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"; // 3 เมื่อจอใหญ่
+
+        return (
+          <div
+            className={`grid ${gridCols} gap-6 md:gap-8`}
+          >
+            {excerpts.map((t, i) => (
+              <blockquote
+                key={i}
+                className="h-full rounded-2xl bg-[#fffaf3] ring-1 ring-[#eadfce] p-5 md:p-6 text-[#3f342d] 
+                           text-[15px] md:text-base leading-7 md:leading-8 shadow-[0_1px_0_#eadfce]
+                           flex"
+                style={{ hyphens: "auto" }}
+              >
+                <p className="m-0 [text-wrap:pretty]">
+                  <span className="text-[#d8653b] mr-2 select-none">“</span>
+                  {t}
+                  <span className="text-[#d8653b] ml-1 select-none">”</span>
+                </p>
+              </blockquote>
+            ))}
           </div>
-        </div>
-      </section>
+        );
+      })()}
+    </div>
+  </div>
+</section>
+
 
       {/* GALLERY */}
       <section id="gallery" className="py-12 md:py-16">

@@ -36,24 +36,7 @@ export default function ParallaxHero({ banner, onSearch }) {
           หอสมุดแห่งชาติรัชมังคลาภิเษก เชียงใหม่
         </p>
 
-        {/* search box */}
-        <div className="mt-8 w-full max-w-xl">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSearch?.(q);
-            }}
-            className="flex items-center rounded-2xl bg-white/90 ring-1 ring-black/10 shadow"
-          >
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search books, authors, keywords…"
-              className="flex-1 px-4 py-3 rounded-2xl bg-transparent outline-none"
-            />
-            <button className="px-5 py-3 font-semibold">Search</button>
-          </form>
-        </div>
+
       </div>
     </section>
   );
