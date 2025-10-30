@@ -71,7 +71,7 @@ export default function SiteHeader() {
             { to: "/", label: "Home" },
             { to: "/books", label: "Books" },
             { to: "/articles", label: "Articles" },
-            { to: "/about", label: "About" },
+            
           ].map((m) => (
             <li key={m.to}>
               <Link
