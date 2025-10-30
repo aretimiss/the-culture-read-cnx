@@ -58,4 +58,10 @@ h1,h2,h3,h4,h5,h6 { font-family: 'Newsreader', serif; }
   }
 }
 
+/* ให้การเปลี่ยนขนาดตัวอักษรนุ่มขึ้นเล็กน้อย */
+html {
+  transition: font-size 180ms ease;
+}
+
+
 
