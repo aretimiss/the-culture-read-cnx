@@ -1,0 +1,5 @@
+{
+  "appTitle": "The Culture Read @CNX",
+  "menu": { "home": "Home", "books": "Books", "articles": "Articles", "readNow": "Read now" },
+  "controls": { "language": "Language", "textSize": "Text size" }
+}

@@ -1,0 +1,5 @@
+{
+  "appTitle": "The Culture Read @CNX",
+  "menu": { "home": "Home", "books": "Mga Aklat", "articles": "Mga Artikulo", "readNow": "Basahin ngayon" },
+  "controls": { "language": "Wika", "textSize": "Laki ng teksto" }
+}

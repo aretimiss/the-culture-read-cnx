@@ -1,0 +1,5 @@
+{
+  "appTitle": "清迈文化阅读",
+  "menu": { "home": "首页", "books": "书籍", "articles": "文章", "readNow": "开始阅读" },
+  "controls": { "language": "语言", "textSize": "文字大小" }
+}

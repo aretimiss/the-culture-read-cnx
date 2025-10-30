@@ -46,3 +46,16 @@ h1,h2,h3,h4,h5,h6 { font-family: 'Newsreader', serif; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+@layer base {
+  :root { --fs-base: 16px; }
+  html { font-size: var(--fs-base); }
+  .fs-sm { --fs-base: 15px; }
+  .fs-md { --fs-base: 16px; }
+  .fs-lg { --fs-base: 18px; }
+  body { @apply leading-relaxed text-[#111518]; }
+  body {
+    font-family: "Noto Sans Thai","Noto Sans Lao","Noto Sans SC",ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  }
+}
+
+

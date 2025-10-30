@@ -1,13 +1,19 @@
 // src/pages/BookArticlesPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
-import { fetchItemsLite, titleOf, descOf } from "../lib/omekaClient";
+
+import { fetchItemsLite } from "../lib/omekaClient";
+import { pickLang } from "../lib/i18nPick";
+import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
 
 /* helpers */
-const toHttps = (u) => (u ? (u.startsWith("http://") ? u.replace(/^http:/, "https:") : u) : "");
+const toHttps = (u) =>
+  u ? (u.startsWith("http://") ? u.replace(/^http:/, "https:") : u) : "";
 const stripTags = (html = "") => {
   if (!html) return "";
   const tmp = document.createElement("div");
@@ -15,26 +21,26 @@ const stripTags = (html = "") => {
   return (tmp.textContent || tmp.innerText || "").trim();
 };
 
-/* พาเลตต์พื้นหลังแบบสลับโทน (ปรับได้ตามชอบ) */
-/* พาเลตต์พื้นหลังแบบสลับโทน (กำหนดคู่กับสีข้อความ) */
+/* พาเลตต์พื้นหลัง + สีข้อความ (วนใช้ต่อสไลด์) */
 const BG_PALETTE = [
-  { bg: "#ff8a3d", text: "#ffffff" }, // citrus — ข้อความขาว
-  { bg: "#f6d4b1", text: "#5b4a3e" }, // cream — ข้อความน้ำตาลเข้ม
-  { bg: "#f0c2a8", text: "#5b4a3e" }, // peach — เข้ม
-  { bg: "#ffd7a0", text: "#5b4a3e" }, // light orange — เข้ม
-  { bg: "#ffe9d6", text: "#5b4a3e" }, // very light — เข้ม
+  { bg: "#ff8a3d", text: "#ffffff" },
+  { bg: "#f6d4b1", text: "#5b4a3e" },
+  { bg: "#f0c2a8", text: "#5b4a3e" },
+  { bg: "#ffd7a0", text: "#5b4a3e" },
+  { bg: "#ffe9d6", text: "#5b4a3e" },
 ];
-
 
 /* ========= หน้าใหญ่แบบ Delassus: 1 เล่มต่อ 1 สไลด์เต็มจอ ========= */
 export default function BookArticlesPage() {
+  const { t } = useTranslation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetchItemsLite();
+        const res = await fetchItemsLite({ limit: 36, sortBy: "created", sortOrder: "desc" });
+        // มี description อย่างน้อยหนึ่งภาษาเท่านั้นถึงจะแสดง
         const filtered = (res || []).filter(
           (it) => Array.isArray(it["dcterms:description"]) && it["dcterms:description"].length > 0
         );
@@ -51,7 +57,9 @@ export default function BookArticlesPage() {
     return (
       <div className="min-h-screen text-[#111518]">
         <SiteHeader />
-        <div className="flex-1 grid place-items-center text-[#7b6c61]">กำลังโหลด…</div>
+        <main className="pt-28 grid place-items-center text-[#7b6c61]">
+          {t("status.loading", "กำลังโหลด…")}
+        </main>
         <Footer />
       </div>
     );
@@ -61,12 +69,14 @@ export default function BookArticlesPage() {
     <div className="min-h-screen text-[#111518]">
       <SiteHeader />
       <FullscreenHeroCarousel items={books} />
-
+      <BackToTop />
+     
     </div>
   );
 }
 
 function FullscreenHeroCarousel({ items = [] }) {
+  const { t } = useTranslation();
   const trackRef = useRef(null);
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
@@ -76,7 +86,7 @@ function FullscreenHeroCarousel({ items = [] }) {
 
   const withAlpha = (hex, alpha = 0.9) => {
     let h = hex.replace("#", "");
-    if (h.length === 3) h = h.split("").map(c => c + c).join("");
+    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
     const r = parseInt(h.slice(0, 2), 16);
     const g = parseInt(h.slice(2, 4), 16);
     const b = parseInt(h.slice(4, 6), 16);
@@ -115,8 +125,9 @@ function FullscreenHeroCarousel({ items = [] }) {
     () =>
       items.map((book, i) => {
         const id = book["o:id"];
-        const title = titleOf(book) || `Item #${id}`;
-        const rawDesc = descOf(book) || "";
+        const title =
+          pickLang(book?.["dcterms:title"], i18n.language) || `Item #${id}`;
+        const rawDesc = pickLang(book?.["dcterms:description"], i18n.language) || "";
         const clean = stripTags(rawDesc);
         const desc = (clean || " ").slice(0, 220) + (clean && clean.length > 220 ? "…" : "");
         const rawThumb =
@@ -132,11 +143,7 @@ function FullscreenHeroCarousel({ items = [] }) {
         const isLightText = text.toLowerCase() === "#ffffff";
 
         return (
-          <section
-            key={id}
-            className="snap-start w-full relative overflow-hidden"
-            style={slideStyle}
-          >
+          <section key={id} className="snap-start w-full relative overflow-hidden" style={slideStyle}>
             {/* ===== MOBILE (<= md) ===== */}
             <div className="md:hidden relative h-full" style={{ color: text }}>
               <div className="absolute inset-x-0 top-[10dvh] bottom-[22dvh]">
@@ -159,13 +166,16 @@ function FullscreenHeroCarousel({ items = [] }) {
                              isLightText ? "bg-white text-[#5b4a3e]" : "bg-[#d8653b] text-white"
                            }`}
               >
-                <span className="align-middle">Discover</span>
+                <span className="align-middle">{t("actions.discover", "Discover")}</span>
                 <span className="ml-2 align-middle">→</span>
               </button>
             </div>
 
             {/* ===== DESKTOP (md+) ===== */}
-            <div className="hidden md:grid h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid-cols-2 gap-8 items-center" style={{ color: text }}>
+            <div
+              className="hidden md:grid h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid-cols-2 gap-8 items-center"
+              style={{ color: text }}
+            >
               <div className="drop-shadow-[0_1px_0_rgba(0,0,0,0.1)]">
                 <h2
                   className="font-extrabold leading-[0.95]"
@@ -175,7 +185,10 @@ function FullscreenHeroCarousel({ items = [] }) {
                 </h2>
                 <p
                   className="mt-5 max-w-xl"
-                  style={{ color: withAlpha(text, 0.9), fontSize: "clamp(1rem, 0.6vw + 0.9rem, 1.25rem)" }}
+                  style={{
+                    color: withAlpha(text, 0.9),
+                    fontSize: "clamp(1rem, 0.6vw + 0.9rem, 1.25rem)",
+                  }}
                 >
                   {desc}
                 </p>
@@ -186,7 +199,7 @@ function FullscreenHeroCarousel({ items = [] }) {
                       isLightText ? "bg-white text-[#5b4a3e]" : "bg-[#d8653b] text-white"
                     } hover:opacity-95`}
                   >
-                    Discover <span className="ml-2">→</span>
+                    {t("actions.discover", "Discover")} <span className="ml-2">→</span>
                   </button>
                   <Link
                     to={`/read/${id}`}
@@ -196,7 +209,7 @@ function FullscreenHeroCarousel({ items = [] }) {
                         : "bg-black/10 text-[#5b4a3e] ring-black/10 hover:bg-black/15"
                     }`}
                   >
-                    Read now
+                    {t("actions.readNow", "Read now")}
                   </Link>
                 </div>
               </div>
@@ -217,13 +230,15 @@ function FullscreenHeroCarousel({ items = [] }) {
           </section>
         );
       }),
-    [items]
+    [items, i18n.language]
   );
 
   if (items.length === 0) {
     return (
       <main className="pt-28 pb-16">
-        <p className="text-center text-[#7b6c61]">ยังไม่มีรายการสำหรับแสดง</p>
+        <p className="text-center text-[#7b6c61]">
+          {t("status.empty", "ยังไม่มีรายการสำหรับแสดง")}
+        </p>
       </main>
     );
   }
@@ -233,7 +248,7 @@ function FullscreenHeroCarousel({ items = [] }) {
 
   return (
     <div className="relative z-10" style={{ ...slideStyle }}>
-      {/* พื้นหลัง fixed + transition สี (หรือสลับเป็น gradient ได้) */}
+      {/* พื้นหลัง fixed + transition สี */}
       <div
         className="fixed inset-0 z-0"
         style={{
@@ -254,8 +269,7 @@ function FullscreenHeroCarousel({ items = [] }) {
         </div>
       </div>
 
-      {/* ปุ่มนำทางแนวตั้ง (มีทั้ง desktop + mobile) */}
-      {/* 💻 Desktop: วางด้านซ้ายกลางจอ, 📱 Mobile: วางล่างขวา */}
+      {/* ปุ่มนำทางแนวตั้ง */}
       <div>
         {/* Desktop */}
         <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-20">
@@ -310,8 +324,7 @@ function FullscreenHeroCarousel({ items = [] }) {
         </div>
       </div>
 
-
-      {/* ดอทแนวตั้งด้านขวา */}
+      {/* ดอทแนวตั้งด้านขวา (Desktop) */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-20">
         {items.map((_, i) => (
           <button

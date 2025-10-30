@@ -1,0 +1,6 @@
+{
+  "appTitle": "The Culture Read @CNX",
+  "menu": { "home": "หน้าแรก", "books": "รายการหนังสือ", "articles": "บทความ", "readNow": "เริ่มอ่าน" },
+  "controls": { "language": "ภาษา", "textSize": "ขนาดตัวอักษร" }
+    
+}
