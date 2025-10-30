@@ -1,11 +1,11 @@
 // src/components/SiteHeader.jsx
 import React, { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Globe2, X, Menu, Minus, Plus, Check } from "lucide-react";
+import { Globe2, X, Menu, Check } from "lucide-react"; // ⬅️ ตัด Minus/Plus ออก
 import i18n from "../i18n";
 import { useTranslation } from "react-i18next";
 
-/* =============== Helpers =============== */
+/* ===== Lock scroll เมื่อเมนูเปิด ===== */
 function useLockBody(lock) {
   useEffect(() => {
     if (!lock) return;
@@ -15,7 +15,7 @@ function useLockBody(lock) {
   }, [lock]);
 }
 
-// โหลดฟอนต์จีนเฉพาะตอนจำเป็น เพื่อลดน้ำหนักหน้าแรก
+// โหลดฟอนต์จีนเฉพาะตอนจำเป็น
 function ensureChineseFontLoaded() {
   if (document.getElementById("font-zh")) return;
   const link = document.createElement("link");
@@ -24,14 +24,10 @@ function ensureChineseFontLoaded() {
   link.href =
     "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap";
   link.onload = () => {
-    // เมื่อโหลดแล้วสลับตัวแปรฟอนต์ให้ภาษา zh ทันที (กำหนดไว้ใน index.css)
     const ui = getComputedStyle(document.documentElement).getPropertyValue(
       "--font-ui"
     );
-    document.documentElement.style.setProperty(
-      "--font-zh",
-      `"Noto Sans SC", ${ui}`
-    );
+    document.documentElement.style.setProperty("--font-zh", `"Noto Sans SC", ${ui}`);
   };
   document.head.appendChild(link);
 }
@@ -42,14 +38,14 @@ const LANGS = [
   { code: "en", label: "English" },
   { code: "zh", label: "中文" },
   { code: "lo", label: "ລາວ" },
-  { code: "fil", label: "Filipino" }
+  { code: "fil", label: "Filipino" },
 ];
 
 /* map ขนาดตัวอักษร → root font-size */
 const FONT_SCALES = {
   small: "93.75%", // ~15px
   base: "100%", // 16px
-  large: "112.5%" // ~18px
+  large: "112.5%", // ~18px
 };
 
 export default function SiteHeader() {
@@ -65,9 +61,7 @@ export default function SiteHeader() {
 
   useLockBody(open);
 
-  /* =============== init =============== */
   useEffect(() => {
-    // header shrink on scroll
     const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -75,7 +69,6 @@ export default function SiteHeader() {
   }, []);
 
   useEffect(() => {
-    // ภาษาเริ่มต้นจาก localStorage
     const savedLang = localStorage.getItem("lang");
     const useLang = savedLang || i18n.language || "en";
     setLang(useLang);
@@ -83,23 +76,19 @@ export default function SiteHeader() {
     i18n.changeLanguage(useLang).catch(() => {});
     if (useLang === "zh") ensureChineseFontLoaded();
 
-    // ขนาดตัวอักษรเริ่มต้น
     const savedScale = localStorage.getItem("fontScale");
     const scaleKey = savedScale && FONT_SCALES[savedScale] ? savedScale : "base";
     setFontScale(scaleKey);
     document.documentElement.style.fontSize = FONT_SCALES[scaleKey];
   }, []);
 
-  /* =============== handlers =============== */
   const handleChangeLang = async (code) => {
     setLang(code);
     localStorage.setItem("lang", code);
     document.documentElement.setAttribute("lang", code);
     try {
       await i18n.changeLanguage(code);
-    } catch (e) {
-      console.warn("changeLanguage error:", e);
-    }
+    } catch {}
     if (code === "zh") ensureChineseFontLoaded();
   };
 
@@ -109,16 +98,7 @@ export default function SiteHeader() {
     localStorage.setItem("fontScale", key);
     document.documentElement.style.fontSize = val;
   };
-  const decFont = () => {
-    if (fontScale === "large") applyFontScale("base");
-    else if (fontScale === "base") applyFontScale("small");
-  };
-  const incFont = () => {
-    if (fontScale === "small") applyFontScale("base");
-    else if (fontScale === "base") applyFontScale("large");
-  };
 
-  /* =============== UI =============== */
   return (
     <>
       {/* Header */}
@@ -135,7 +115,6 @@ export default function SiteHeader() {
                 : "bg-white/25 backdrop-blur-md ring-1 ring-black/10"
             }`}
         >
-          {/* โลโก้ */}
           <Link to="/" className="flex items-center gap-3">
             <img
               src="/assets/logo.png"
@@ -145,7 +124,6 @@ export default function SiteHeader() {
             <span className="sr-only">Home</span>
           </Link>
 
-          {/* ปุ่มเมนู */}
           <button
             aria-label="Open menu"
             aria-expanded={open}
@@ -158,7 +136,7 @@ export default function SiteHeader() {
         </div>
       </header>
 
-      {/* spacer ป้องกัน overlay ทับเนื้อหาในต้นหน้า */}
+      {/* spacer */}
       <div className="h-20 md:h-20" />
 
       {/* Overlay */}
@@ -193,11 +171,18 @@ export default function SiteHeader() {
           </button>
         </div>
 
-        {/* ภาษา + ขนาดอักษร */}
-        <div className="p-6 border-b border-black/10 space-y-6">
-          {/* Language dropdown */}
-          <div>
-            <h3 className="text-sm uppercase font-semibold tracking-wider text-[#a5866e] mb-2">
+        {/* ------- เนื้อหาเมนู: ทำเป็นคอลัมน์ + เลื่อนในตัว + เว้นล่างเยอะ ------- */}
+        <div
+          className="
+            flex-1 overflow-y-auto 
+            p-6 space-y-8 
+            pb-32                              /* กันชิดล่าง */
+            scroll-pt-4 no-scrollbar
+          "
+        >
+          {/* Language */}
+          <section className="space-y-2">
+            <h3 className="text-sm uppercase font-semibold tracking-wider text-[#a5866e]">
               {t("menu.language", "Language")}
             </h3>
             <div className="relative">
@@ -217,99 +202,84 @@ export default function SiteHeader() {
                 ▾
               </div>
             </div>
-            <div className="mt-2 text-sm text-[#5b4a3e]/80 flex items-center gap-2">
+            <div className="text-sm text-[#5b4a3e]/80 flex items-center gap-2">
               <Check className="w-4 h-4" />
               {t("menu.currentLang", "Current")}:{" "}
               {LANGS.find((l) => l.code === lang)?.label || lang}
             </div>
-          </div>
+          </section>
 
-          {/* Font size */}
-          <div>
-            <h3 className="text-sm uppercase font-semibold tracking-wider text-[#a5866e] mb-2">
+          {/* Font size — ลบปุ่ม − / + ออก เหลือแค่ A-, A, A+ */}
+          <section className="space-y-3">
+            <h3 className="text-sm uppercase font-semibold tracking-wider text-[#a5866e]">
               {t("menu.fontSize", "Font size")}
             </h3>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-start gap-2">
               <button
-                onClick={decFont}
-                className="w-10 h-10 rounded-xl border border-[#eadfce] bg-white/90 text-[#5b4a3e]
-                           grid place-items-center hover:bg-[#d8653b] hover:text-white transition"
-                title={t("menu.decrease", "Decrease")}
+                onClick={() => applyFontScale("small")}
+                className={`px-3 py-2 rounded-lg border font-semibold ${
+                  fontScale === "small"
+                    ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
+                    : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
+                }`}
               >
-                <Minus className="w-5 h-5" />
+                A-
               </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => applyFontScale("small")}
-                  className={`px-3 py-2 rounded-lg border font-semibold ${
-                    fontScale === "small"
-                      ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
-                      : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
-                  }`}
-                >
-                  A-
-                </button>
-                <button
-                  onClick={() => applyFontScale("base")}
-                  className={`px-3 py-2 rounded-lg border font-semibold ${
-                    fontScale === "base"
-                      ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
-                      : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
-                  }`}
-                >
-                  A
-                </button>
-                <button
-                  onClick={() => applyFontScale("large")}
-                  className={`px-3 py-2 rounded-lg border font-semibold ${
-                    fontScale === "large"
-                      ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
-                      : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
-                  }`}
-                >
-                  A+
-                </button>
-              </div>
-
               <button
-                onClick={incFont}
-                className="w-10 h-10 rounded-xl border border-[#eadfce] bg-white/90 text-[#5b4a3e]
-                           grid place-items-center hover:bg-[#d8653b] hover:text-white transition"
-                title={t("menu.increase", "Increase")}
+                onClick={() => applyFontScale("base")}
+                className={`px-3 py-2 rounded-lg border font-semibold ${
+                  fontScale === "base"
+                    ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
+                    : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
+                }`}
               >
-                <Plus className="w-5 h-5" />
+                A
+              </button>
+              <button
+                onClick={() => applyFontScale("large")}
+                className={`px-3 py-2 rounded-lg border font-semibold ${
+                  fontScale === "large"
+                    ? "bg-[#5b4a3e] text-white border-[#5b4a3e]"
+                    : "bg-white/90 text-[#5b4a3e] border-[#eadfce]"
+                }`}
+              >
+                A+
               </button>
             </div>
-
-            <div className="mt-2 text-sm text-[#5b4a3e]/80">
+            <div className="text-sm text-[#5b4a3e]/80">
               {t("menu.currentSize", "Current size")}:{" "}
               {fontScale === "small" ? "A-" : fontScale === "large" ? "A+" : "A"}
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* ลิงก์เมนูหลัก */}
-        <ul className="p-6 space-y-4">
-          {[
-            { to: "/", label: t("nav.home", "Home") },
-            { to: "/books", label: t("nav.books", "Books") },
-            { to: "/articles", label: t("nav.articles", "Articles") }
-          ].map((m) => (
-            <li key={m.to}>
-              <NavLink
-                to={m.to}
-                onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  `block text-2xl font-bold tracking-tight transition
-                   ${isActive ? "text-[#d8653b]" : "text-[#5b4a3e] hover:text-[#d8653b]"}`
-                }
-              >
-                {m.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+          {/* ลิงก์เมนูหลัก — เพิ่มช่องไฟแนวตั้ง และเว้นขอบล่าง */}
+          <section className="pt-2">
+            <ul className="space-y-5">
+              {[
+                { to: "/", label: t("nav.home", "Home") },
+                { to: "/books", label: t("nav.books", "Books") },
+                { to: "/articles", label: t("nav.articles", "Articles") },
+              ].map((m) => (
+                <li key={m.to}>
+                  <NavLink
+                    to={m.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) =>
+                      `block text-2xl font-bold tracking-tight transition
+                       ${
+                         isActive
+                           ? "text-[#d8653b]"
+                           : "text-[#5b4a3e] hover:text-[#d8653b]"
+                       }`
+                    }
+                  >
+                    {m.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </nav>
     </>
   );
