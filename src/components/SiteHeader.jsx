@@ -5,7 +5,7 @@ import { Globe2, X, Menu, Minus, Plus, Check } from "lucide-react";
 import i18n from "../i18n";
 import { useTranslation } from "react-i18next";
 
-/* ===== Lock scroll เมื่อเมนูเปิด ===== */
+/* =============== Helpers =============== */
 function useLockBody(lock) {
   useEffect(() => {
     if (!lock) return;
@@ -15,21 +15,41 @@ function useLockBody(lock) {
   }, [lock]);
 }
 
-/* ===== รายการภาษา (เพิ่ม/ลดที่นี่ได้เลย) ===== */
+// โหลดฟอนต์จีนเฉพาะตอนจำเป็น เพื่อลดน้ำหนักหน้าแรก
+function ensureChineseFontLoaded() {
+  if (document.getElementById("font-zh")) return;
+  const link = document.createElement("link");
+  link.id = "font-zh";
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap";
+  link.onload = () => {
+    // เมื่อโหลดแล้วสลับตัวแปรฟอนต์ให้ภาษา zh ทันที (กำหนดไว้ใน index.css)
+    const ui = getComputedStyle(document.documentElement).getPropertyValue(
+      "--font-ui"
+    );
+    document.documentElement.style.setProperty(
+      "--font-zh",
+      `"Noto Sans SC", ${ui}`
+    );
+  };
+  document.head.appendChild(link);
+}
+
+/* รายการภาษา */
 const LANGS = [
   { code: "th", label: "ไทย" },
   { code: "en", label: "English" },
   { code: "zh", label: "中文" },
   { code: "lo", label: "ລາວ" },
-  { code: "fil", label: "Filipino" },
+  { code: "fil", label: "Filipino" }
 ];
 
-/* ===== map ขนาดตัวอักษร → root font-size =====
-   100% = ฐาน Tailwind ทั้งหมดจะขยาย/ย่อไปพร้อมกัน */
+/* map ขนาดตัวอักษร → root font-size */
 const FONT_SCALES = {
-  small: "93.75%", // ≈ 15px
-  base: "100%",    // 16px
-  large: "112.5%", // 18px
+  small: "93.75%", // ~15px
+  base: "100%", // 16px
+  large: "112.5%" // ~18px
 };
 
 export default function SiteHeader() {
@@ -37,7 +57,7 @@ export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // states ของ dropdown ภาษา + ขนาดอักษร
+  // states ของภาษากับขนาดอักษร
   const [lang, setLang] = useState(i18n.language || "en");
   const [fontScale, setFontScale] = useState(
     localStorage.getItem("fontScale") || "base"
@@ -45,9 +65,9 @@ export default function SiteHeader() {
 
   useLockBody(open);
 
-  /* ===== apply initial values ===== */
+  /* =============== init =============== */
   useEffect(() => {
-    // scroll behavior header
+    // header shrink on scroll
     const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -55,26 +75,22 @@ export default function SiteHeader() {
   }, []);
 
   useEffect(() => {
-    // โหลดค่าที่เคยเลือกไว้
+    // ภาษาเริ่มต้นจาก localStorage
     const savedLang = localStorage.getItem("lang");
-    if (savedLang && savedLang !== i18n.language) {
-      i18n.changeLanguage(savedLang);
-      setLang(savedLang);
-      document.documentElement.setAttribute("lang", savedLang);
-    } else {
-      document.documentElement.setAttribute("lang", i18n.language || "en");
-    }
+    const useLang = savedLang || i18n.language || "en";
+    setLang(useLang);
+    document.documentElement.setAttribute("lang", useLang);
+    i18n.changeLanguage(useLang).catch(() => {});
+    if (useLang === "zh") ensureChineseFontLoaded();
 
+    // ขนาดตัวอักษรเริ่มต้น
     const savedScale = localStorage.getItem("fontScale");
-    if (savedScale && FONT_SCALES[savedScale]) {
-      setFontScale(savedScale);
-      document.documentElement.style.fontSize = FONT_SCALES[savedScale];
-    } else {
-      document.documentElement.style.fontSize = FONT_SCALES["base"];
-    }
+    const scaleKey = savedScale && FONT_SCALES[savedScale] ? savedScale : "base";
+    setFontScale(scaleKey);
+    document.documentElement.style.fontSize = FONT_SCALES[scaleKey];
   }, []);
 
-  /* ===== handlers ===== */
+  /* =============== handlers =============== */
   const handleChangeLang = async (code) => {
     setLang(code);
     localStorage.setItem("lang", code);
@@ -84,6 +100,7 @@ export default function SiteHeader() {
     } catch (e) {
       console.warn("changeLanguage error:", e);
     }
+    if (code === "zh") ensureChineseFontLoaded();
   };
 
   const applyFontScale = (key) => {
@@ -92,7 +109,6 @@ export default function SiteHeader() {
     localStorage.setItem("fontScale", key);
     document.documentElement.style.fontSize = val;
   };
-
   const decFont = () => {
     if (fontScale === "large") applyFontScale("base");
     else if (fontScale === "base") applyFontScale("small");
@@ -102,9 +118,10 @@ export default function SiteHeader() {
     else if (fontScale === "base") applyFontScale("large");
   };
 
+  /* =============== UI =============== */
   return (
     <>
-      {/* ===== HEADER ===== */}
+      {/* Header */}
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all ${
           scrolled ? "h-16" : "h-20"
@@ -128,7 +145,7 @@ export default function SiteHeader() {
             <span className="sr-only">Home</span>
           </Link>
 
-          {/* ปุ่มแฮมเบอร์เกอร์ */}
+          {/* ปุ่มเมนู */}
           <button
             aria-label="Open menu"
             aria-expanded={open}
@@ -141,10 +158,10 @@ export default function SiteHeader() {
         </div>
       </header>
 
-      {/* spacer ป้องกัน header ทับ */}
+      {/* spacer ป้องกัน overlay ทับเนื้อหาในต้นหน้า */}
       <div className="h-20 md:h-20" />
 
-      {/* ===== Overlay ===== */}
+      {/* Overlay */}
       <div
         className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -152,7 +169,7 @@ export default function SiteHeader() {
         onClick={() => setOpen(false)}
       />
 
-      {/* ===== Drawer ===== */}
+      {/* Drawer */}
       <nav
         className={`fixed top-0 right-0 h-full w-[88%] max-w-[420px] z-[70] bg-[#fffaf2] shadow-2xl ring-1 ring-black/10 
                     transition-transform duration-300 ease-out
@@ -176,7 +193,7 @@ export default function SiteHeader() {
           </button>
         </div>
 
-        {/* ===== ภาษากับขนาดอักษร ===== */}
+        {/* ภาษา + ขนาดอักษร */}
         <div className="p-6 border-b border-black/10 space-y-6">
           {/* Language dropdown */}
           <div>
@@ -196,14 +213,12 @@ export default function SiteHeader() {
                   </option>
                 ))}
               </select>
-              {/* caret */}
               <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#5b4a3e]/60">
                 ▾
               </div>
             </div>
-            {/* แสดงภาษาที่เลือก */}
             <div className="mt-2 text-sm text-[#5b4a3e]/80 flex items-center gap-2">
-              <Check className="w-4 h-4" />{" "}
+              <Check className="w-4 h-4" />
               {t("menu.currentLang", "Current")}:{" "}
               {LANGS.find((l) => l.code === lang)?.label || lang}
             </div>
@@ -274,12 +289,12 @@ export default function SiteHeader() {
           </div>
         </div>
 
-        {/* ===== ลิงก์เมนูหลัก ===== */}
+        {/* ลิงก์เมนูหลัก */}
         <ul className="p-6 space-y-4">
           {[
             { to: "/", label: t("nav.home", "Home") },
             { to: "/books", label: t("nav.books", "Books") },
-            { to: "/articles", label: t("nav.articles", "Articles") },
+            { to: "/articles", label: t("nav.articles", "Articles") }
           ].map((m) => (
             <li key={m.to}>
               <NavLink

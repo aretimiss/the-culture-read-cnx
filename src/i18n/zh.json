@@ -1,5 +1,65 @@
 {
-  "appTitle": "清迈文化阅读",
-  "menu": { "home": "首页", "books": "书籍", "articles": "文章", "readNow": "开始阅读" },
-  "controls": { "language": "语言", "textSize": "文字大小" }
+  "nav": {
+    "home": "首页",
+    "books": "书库",
+    "articles": "文章"
+  },
+  "menu": {
+    "title": "菜单",
+    "language": "语言",
+    "fontSize": "字体大小",
+    "decrease": "减小",
+    "increase": "增大",
+    "currentLang": "当前语言",
+    "currentSize": "当前大小"
+  },
+  "search": {
+    "placeholder": "搜索标题/简介…"
+  },
+  "sections": {
+    "recommendBooks": "书籍推荐",
+    "recommendBooksDesc": "用于 SEO 的书评/文章（可随时编辑）",
+    "rareBooks": "珍本推荐",
+    "ancientDocs": "古文献",
+    "activities": "活动 / 新闻",
+    "activitiesDesc": "与图书与档案相关的活动公告"
+  },
+  "actions": {
+    "read": "阅读",
+    "readNow": "立即阅读",
+    "openReader": "打开阅读器"
+  },
+  "status": {
+    "loading": "加载中…"
+  },
+  "errors": {
+    "loadFailed": "数据加载失败",
+    "noId": "缺少项目编号"
+  },
+  "book": {
+    "showcase": "导览",
+    "untitled": "未命名",
+    "overview": "概览",
+    "keyFacts": "关键信息",
+    "author": "作者",
+    "excerpts": "摘录",
+    "gallery": "画廊",
+    "featured": "精选书籍",
+    "details": "详情",
+    "published": "出版年",
+    "publisher": "出版社",
+    "language": "语言",
+    "extent": "篇幅",
+    "rights": "版权",
+    "aboutAuthor": "关于作者",
+    "authorDash": "作者 —",
+    "authorBlurb": "此区块为 Delassus 风格的编辑版式。可替换为作者简介或作品背景。",
+    "highlighted": "精彩摘录",
+    "ex1": "开启探索与文化记忆基调的开篇。",
+    "ex2": "呈现地方与人群肌理的一段文字。",
+    "ex3": "读罢仍回荡在心中的节奏。",
+    "readNowTitle": "现在开始阅读此书",
+    "readNowDesc": "点击打开阅读器",
+    "type": "图书"
+  }
 }

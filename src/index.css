@@ -2,40 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ตัวช่วย mapping โทนสีให้ใช้ได้เป็นคลาสง่าย ๆ */
-:root{
-  --primary:#8B0000;
-  --accent:#4682B4;
-  --background-light:#f6f7f8;
-  --background-dark:#111c21;
+/* ====== โทนสีพื้นฐาน (ใช้เป็นคลาสง่าย ๆ) ====== */
+:root {
+  --primary: #8B0000;
+  --accent: #4682B4;
+  --background-light: #f6f7f8;
+  --background-dark: #111c21;
+
+  /* ฟอนต์แบบเบาสุด */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-th: "Noto Sans Thai", var(--font-ui);
+  --font-lo: "Noto Sans Lao", var(--font-ui);
+  /* จีน lazy-load: เริ่มด้วย system แล้วจะถูกสลับใน JS */
+  --font-zh: var(--font-ui);
 }
 
+/* สีเป็นคลาส */
 .text-primary { color: var(--primary); }
 .bg-primary   { background-color: var(--primary); }
 .bg-accent    { background-color: var(--accent); }
 .bg-background-light { background-color: var(--background-light); }
 .dark .bg-background-dark { background-color: var(--background-dark); }
 
-/* ฟอนต์ */
-body { font-family: 'Noto Sans', system-ui, Segoe UI, Roboto, Arial, sans-serif; }
-h1,h2,h3,h4,h5,h6 { font-family: 'Newsreader', serif; }
+/* ====== ฟอนต์ฐาน + a11y ตามภาษา ====== */
+@layer base {
+  html { font-family: var(--font-ui); }
+  body { @apply leading-relaxed text-[#111518]; }
 
-/* ยูทิลิตี้เสริมที่เทมเพลตใช้บ่อย */
-.navlink {
-  @apply text-[#111518] dark:text-gray-300 dark:hover:text-white text-sm font-medium leading-normal;
+  /* บังคับฟอนต์ให้เหมาะกับภาษา (คมและอ่านง่ายขึ้น) */
+  :lang(th) { font-family: var(--font-th); }
+  :lang(lo) { font-family: var(--font-lo); }
+  :lang(zh) { font-family: var(--font-zh); }
 }
+
+/* ให้การเปลี่ยนขนาดตัวอักษรจากปุ่ม A-/A/A+ นุ่มขึ้น */
+html { transition: font-size 180ms ease; }
+
+/* ====== ยูทิลิตี้ที่ใช้จริงในโปรเจ็กต์ ====== */
+.navlink {
+  @apply text-[#111518] dark:text-gray-300 hover:text-[#d8653b] dark:hover:text-white text-sm font-medium;
+}
+
 .btn-neutral {
   @apply cursor-pointer rounded-lg bg-background-light dark:bg-gray-800 text-[#111518] dark:text-white text-sm font-bold tracking-[0.015em] px-4 h-10;
 }
+
 .icon-neutral {
-  @apply p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-sm;
+  @apply p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700;
 }
+
+/* การ์ดนุ่ม ๆ ใช้ในหน้า Home */
+.card-soft {
+  @apply rounded-3xl bg-white/70 backdrop-blur-md ring-1 ring-black/10 shadow;
+}
+
+/* หัวข้อส่วน */
 .section-title {
-  @apply text-[#111518] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-10 font-display;
+  @apply text-[#111518] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-10;
 }
+
+/* สถานะ/ข้อความกลางหน้า */
 .state { @apply p-6 text-gray-600 dark:text-gray-300; }
 
-/* line-clamp แบบไม่ใช้ปลั๊กอิน (ใช้ webkit) */
+/* line-clamp แบบไม่ใช้ปลั๊กอิน */
 .line-clamp-2 {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -43,25 +72,6 @@ h1,h2,h3,h4,h5,h6 { font-family: 'Newsreader', serif; }
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 
+/* ซ่อนสครอลบาร์แบบเรียบ ๆ */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-@layer base {
-  :root { --fs-base: 16px; }
-  html { font-size: var(--fs-base); }
-  .fs-sm { --fs-base: 15px; }
-  .fs-md { --fs-base: 16px; }
-  .fs-lg { --fs-base: 18px; }
-  body { @apply leading-relaxed text-[#111518]; }
-  body {
-    font-family: "Noto Sans Thai","Noto Sans Lao","Noto Sans SC",ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-  }
-}
-
-/* ให้การเปลี่ยนขนาดตัวอักษรนุ่มขึ้นเล็กน้อย */
-html {
-  transition: font-size 180ms ease;
-}
-
-
-

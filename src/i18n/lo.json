@@ -1,5 +1,65 @@
 {
-  "appTitle": "ວັດທະນະທໍາອ່ານ @CNX",
-  "menu": { "home": "ໜ້າຫຼັກ", "books": "ປື້ມ", "articles": "ບົດຄວາມ", "readNow": "ເລີ່ມອ່ານ" },
-  "controls": { "language": "ພາສາ", "textSize": "ຂະໜາດຕົວອັກສອນ" }
+  "nav": {
+    "home": "ໜ້າຫຼັກ",
+    "books": "ຫ້ອງສະຫມຸດ",
+    "articles": "ບົດຄວາມ"
+  },
+  "menu": {
+    "title": "ເມນູ",
+    "language": "ພາສາ",
+    "fontSize": "ຂະໜາດອັກສອນ",
+    "decrease": "ຫຼຸດ",
+    "increase": "ເພີ່ມ",
+    "currentLang": "ພາສາປັດຈຸບັນ",
+    "currentSize": "ຂະໜາດປັດຈຸບັນ"
+  },
+  "search": {
+    "placeholder": "ຄົ້ນຫາຫົວຂໍ້/ຄໍາອະທິບາຍ…"
+  },
+  "sections": {
+    "recommendBooks": "ແນະນໍາປຶ້ມ",
+    "recommendBooksDesc": "ບົດຄວາມ/ບລ໋ອກ ເພື່ອ SEO (ແກ້ໄຂໄດ້ພາຍຫຼັງ)",
+    "rareBooks": "ປຶ້ມຫາຍາກ",
+    "ancientDocs": "ເອກະສານໂບຮານ",
+    "activities": "ກິດຈະກໍາ / ຂ່າວສານ",
+    "activitiesDesc": "ກະດານກິດຈະກໍາກ່ຽວກັບປຶ້ມແລະຄັງເອກະສານ"
+  },
+  "actions": {
+    "read": "ອ່ານ",
+    "readNow": "ອ່ານດຽວນີ້",
+    "openReader": "ເປີດຕົວອ່ານ"
+  },
+  "status": {
+    "loading": "ກຳລັງໂຫຼດ…"
+  },
+  "errors": {
+    "loadFailed": "ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ",
+    "noId": "ບໍ່ພົບລະຫັດລາຍການ"
+  },
+  "book": {
+    "showcase": "ພາບລວມ",
+    "untitled": "ບໍ່ມີຫົວຂໍ້",
+    "overview": "ພາບລວມ",
+    "keyFacts": "ຂໍ້ມູນສຳຄັນ",
+    "author": "ຜູ້ແຕ່ງ",
+    "excerpts": "ຂໍ້ຄັດຕອງ",
+    "gallery": "ຮູບພາບ",
+    "featured": "ປຶ້ມເດັ່ນ",
+    "details": "ລາຍລະອຽດ",
+    "published": "ປີພິມ",
+    "publisher": "ສຳນັກພິມ",
+    "language": "ພາສາ",
+    "extent": "ຄວາມຍາວ",
+    "rights": "ລິຂະສິດ",
+    "aboutAuthor": "ກ່ຽວກັບຜູ້ແຕ່ງ",
+    "authorDash": "ຜູ້ແຕ່ງ —",
+    "authorBlurb": "ບລັອກສະໄຕລອອກແບບສະບັບ Delassus ສາມາດແທນເນື້ອຫາເປັນປະຫວັດຜູ້ແຕ່ງໄດ້",
+    "highlighted": "ຂໍ້ຄັດຕອງເດັ່ນ",
+    "ex1": "ຄໍານໍາທີ່ກໍ່ບັນຍາກາດແຫ່ງການຄົ້ນພົບ.",
+    "ex2": "ຂໍ້ຄວາມທີ່ສະທ້ອນລັກສະນະຂອງສະຖານທີ່ແລະຜູ້ຄົນ.",
+    "ex3": "ຈົດຈໍາເສີຍໆຫຼັງອ່ານຈົບ.",
+    "readNowTitle": "ເລີ່ມອ່ານດຽວນີ້",
+    "readNowDesc": "ກົດເພື່ອເປີດຕົວອ່ານ",
+    "type": "ປຶ້ມ"
+  }
 }

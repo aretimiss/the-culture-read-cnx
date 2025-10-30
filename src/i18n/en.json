@@ -1,5 +1,65 @@
 {
-  "appTitle": "The Culture Read @CNX",
-  "menu": { "home": "Home", "books": "Books", "articles": "Articles", "readNow": "Read now" },
-  "controls": { "language": "Language", "textSize": "Text size" }
+  "nav": {
+    "home": "Home",
+    "books": "Books",
+    "articles": "Articles"
+  },
+  "menu": {
+    "title": "Menu",
+    "language": "Language",
+    "fontSize": "Font size",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "currentLang": "Current",
+    "currentSize": "Current size"
+  },
+  "search": {
+    "placeholder": "Search titles/descriptions…"
+  },
+  "sections": {
+    "recommendBooks": "Recommended Books",
+    "recommendBooksDesc": "Blog/articles for SEO-friendly book recommendations (editable later).",
+    "rareBooks": "Rare Books",
+    "ancientDocs": "Ancient Documents",
+    "activities": "Activities / News",
+    "activitiesDesc": "Board for events related to books and archives."
+  },
+  "actions": {
+    "read": "Read",
+    "readNow": "Read now",
+    "openReader": "Open Reader"
+  },
+  "status": {
+    "loading": "Loading…"
+  },
+  "errors": {
+    "loadFailed": "Failed to load data",
+    "noId": "Missing item ID"
+  },
+  "book": {
+    "showcase": "Showcase",
+    "untitled": "Untitled",
+    "overview": "Overview",
+    "keyFacts": "Key Facts",
+    "author": "Author",
+    "excerpts": "Excerpts",
+    "gallery": "Gallery",
+    "featured": "Featured Book",
+    "details": "Details",
+    "published": "Published",
+    "publisher": "Publisher",
+    "language": "Language",
+    "extent": "Extent",
+    "rights": "Rights",
+    "aboutAuthor": "About the author",
+    "authorDash": "The author —",
+    "authorBlurb": "This section mirrors Delassus-style editorial blocks. Replace with the author's biography or context of the work.",
+    "highlighted": "Highlighted excerpts",
+    "ex1": "An opening that sets the tone for discovery and cultural memory.",
+    "ex2": "A paragraph that reveals the texture of place and people.",
+    "ex3": "A passage whose cadence lingers beyond the page.",
+    "readNowTitle": "Read the book now",
+    "readNowDesc": "Dive into the work instantly.",
+    "type": "Book"
+  }
 }

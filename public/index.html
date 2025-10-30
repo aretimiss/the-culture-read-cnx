@@ -3,22 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+
+    <!-- โหลดเฉพาะสิ่งจำเป็น + เบาสุด -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <!-- ไทย + ลาว เท่านั้น (Latin ใช้ system-ui) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&family=Noto+Sans+Lao:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- จีน: ไม่โหลดตอนแรก (จะ inject ผ่าน JS เมื่อสลับเป็น zh) -->
+    <!-- <link id="font-zh" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet"> -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="อ่านหนังสือหายากและเอกสาร PDF ออนไลน์"
-    />
+    <meta name="description" content="อ่านหนังสือหายากและเอกสาร PDF ออนไลน์" />
     <title>The Culture Read @CNX</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
   </body>
-
 </html>

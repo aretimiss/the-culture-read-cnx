@@ -1,5 +1,65 @@
 {
-  "appTitle": "The Culture Read @CNX",
-  "menu": { "home": "Home", "books": "Mga Aklat", "articles": "Mga Artikulo", "readNow": "Basahin ngayon" },
-  "controls": { "language": "Wika", "textSize": "Laki ng teksto" }
+  "nav": {
+    "home": "Home",
+    "books": "Aklatan",
+    "articles": "Mga Artikulo"
+  },
+  "menu": {
+    "title": "Menu",
+    "language": "Wika",
+    "fontSize": "Laki ng font",
+    "decrease": "Liitan",
+    "increase": "Lakihan",
+    "currentLang": "Kasalukuyang wika",
+    "currentSize": "Kasalukuyang laki"
+  },
+  "search": {
+    "placeholder": "Maghanap ng pamagat/ paglalarawan…"
+  },
+  "sections": {
+    "recommendBooks": "Inirerekomendang Aklat",
+    "recommendBooksDesc": "Mga blog/artikulo para sa SEO (maaaaring baguhin kalaunan).",
+    "rareBooks": "Bihirang Aklat",
+    "ancientDocs": "Sinaunang Dokumento",
+    "activities": "Aktibidad / Balita",
+    "activitiesDesc": "Lupon ng mga kaganapan kaugnay ng aklat at arkibo."
+  },
+  "actions": {
+    "read": "Basahin",
+    "readNow": "Basahin ngayon",
+    "openReader": "Buksan ang Reader"
+  },
+  "status": {
+    "loading": "Naglo-load…"
+  },
+  "errors": {
+    "loadFailed": "Nabigong mag-load ng datos",
+    "noId": "Walang item ID"
+  },
+  "book": {
+    "showcase": "Showcase",
+    "untitled": "Walang pamagat",
+    "overview": "Pangkalahatang-ideya",
+    "keyFacts": "Mahahalagang Impormasyon",
+    "author": "May-akda",
+    "excerpts": "Mga Sipì",
+    "gallery": "Gallery",
+    "featured": "Tampok na Aklat",
+    "details": "Detalye",
+    "published": "Taong limbag",
+    "publisher": "Pabliser",
+    "language": "Wika",
+    "extent": "Haba",
+    "rights": "Karapatan",
+    "aboutAuthor": "Tungkol sa may-akda",
+    "authorDash": "Ang may-akda —",
+    "authorBlurb": "Delassus-style na seksyon; palitan ng talambuhay ng may-akda o konteksto ng akda.",
+    "highlighted": "Mga piling sipì",
+    "ex1": "Panimulang nagtatakda ng himig ng pagtuklas at alaala.",
+    "ex2": "Talatang naglalarawan ng himig ng pook at tao.",
+    "ex3": "Himig na nananatili kahit matapos basahin.",
+    "readNowTitle": "Basahin ang aklat ngayon",
+    "readNowDesc": "Pindutin upang buksan ang reader.",
+    "type": "Aklat"
+  }
 }
