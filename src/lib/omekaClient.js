@@ -42,6 +42,42 @@ const http = axios.create({
 const cache = new Map();
 const now = () => Date.now();
 
+/** ========= Query-string builder (รองรับ array/object/property[]) ========= */
+function buildQuery(obj = {}) {
+  const pairs = [];
+  const enc = (v) => encodeURIComponent(String(v));
+
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === "") return;
+
+    if (Array.isArray(v)) {
+      v.forEach((val, idx) => {
+        if (val && typeof val === "object" && !Array.isArray(val)) {
+          Object.entries(val).forEach(([sk, sv]) => {
+            if (sv === undefined || sv === null) return;
+            pairs.push(`${enc(k)}[${idx}][${enc(sk)}]=${enc(sv)}`);
+          });
+        } else {
+          pairs.push(`${enc(k)}[]=${enc(val)}`);
+        }
+      });
+      return;
+    }
+
+    if (typeof v === "object") {
+      Object.entries(v).forEach(([sk, sv]) => {
+        if (sv === undefined || sv === null) return;
+        pairs.push(`${enc(k)}[${enc(sk)}]=${enc(sv)}`);
+      });
+      return;
+    }
+
+    pairs.push(`${enc(k)}=${enc(v)}`);
+  });
+
+  return pairs.join("&");
+}
+
 /** GET with cache + graceful CORS fallbacks */
 async function getJson(url, { cacheTtlMs = 30000 } = {}) {
   const hit = cache.get(url);
@@ -71,7 +107,7 @@ async function getJson(url, { cacheTtlMs = 30000 } = {}) {
 /** ========= Public fetchers (เบา) ========= */
 /**
  * ดึง items แบบเบา: จำกัดจำนวน/เรียงลำดับ + กรอง has_media=1
- * ไม่ embed หนัก เพียงพอสำหรับ Home/Listing
+ * รองรับพารามิเตอร์กรองเพิ่ม เช่น resource_class_label, "o:resource_class", item_set_id, property[]
  */
 export async function fetchItemsLite({
   limit = 12,
@@ -79,22 +115,30 @@ export async function fetchItemsLite({
   sortBy = "created",
   sortOrder = "desc",
   query,
+  ...restFilters
 } = {}) {
-  let path =
+  let base =
     `/items?per_page=${encodeURIComponent(limit)}` +
     `&page=${encodeURIComponent(page)}` +
     `&sort_by=${encodeURIComponent(sortBy)}` +
     `&sort_order=${encodeURIComponent(sortOrder)}` +
-    `&has_media=1`; // เพิ่มเพื่อโอกาสมีปกสูง
+    `&has_media=1`;
 
   if (query && query.trim()) {
-    const q = encodeURIComponent(query.trim());
-    path +=
-      `&property[0][property]=dcterms:title&property[0][type]=contains&property[0][text]=${q}` +
-      `&property[1][property]=dcterms:description&property[1][type]=contains&property[1][text]=${q}`;
+    const q = query.trim();
+    base += `&${buildQuery({
+      property: [
+        { property: "dcterms:title", type: "contains", text: q },
+        { property: "dcterms:description", type: "contains", text: q },
+      ],
+    })}`;
   }
 
-  const url = withKeys(api(path));
+  if (restFilters && Object.keys(restFilters).length > 0) {
+    base += `&${buildQuery(restFilters)}`;
+  }
+
+  const url = withKeys(api(base));
   return await getJson(url, { cacheTtlMs: 30000 });
 }
 
@@ -149,17 +193,18 @@ const thumbCache = new Map();
  * คืน URL ปกของ item:
  * 1) item.thumbnail_display_urls (medium > large > square > original)
  * 2) media ที่ฝังมาและเป็น image + thumbnail_display_urls
- * 3) media เป็น @id → ดึงมาแบบเบา แล้วคัดตามข้อ 2
+ * 3) media เป็น @id → ดึงรายละเอียดก่อนแล้วเลือกเหมาะสุด
  */
 export async function thumbUrlOf(item) {
   const itemId = item?.["o:id"];
   if (!itemId) return null;
   if (thumbCache.has(itemId)) return thumbCache.get(itemId);
 
-  // (1) item-level thumbnails (ตรงกับ JSON ของคุณ)
+  // (1) item-level thumbnails
   const itThumb = item?.thumbnail_display_urls;
   if (itThumb) {
-    const best = itThumb.medium || itThumb.large || itThumb.square || itThumb.original || null;
+    const best =
+      itThumb.medium || itThumb.large || itThumb.square || itThumb.original || null;
     if (best) { thumbCache.set(itemId, best); return best; }
   }
 
@@ -182,7 +227,12 @@ export async function thumbUrlOf(item) {
       const m = await getJson(withKeys(refId), { cacheTtlMs: 60000 });
       const mt = m?.["o:media_type"] || "";
       const t = m?.thumbnail_display_urls;
-      const best = t?.medium || t?.large || t?.square || (mt.startsWith("image/") ? m?.["o:original_url"] : null) || null;
+      const best =
+        t?.medium ||
+        t?.large ||
+        t?.square ||
+        (mt.startsWith("image/") ? m?.["o:original_url"] : null) ||
+        null;
       if (best) { thumbCache.set(itemId, best); return best; }
     } catch {}
   }
