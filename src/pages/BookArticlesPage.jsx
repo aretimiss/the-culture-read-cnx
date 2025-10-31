@@ -97,7 +97,7 @@ export default function BookArticlesPage() {
       </AnimatePresence>
 
       <BackToTop />
-      <Footer />
+      
     </div>
   );
 }
