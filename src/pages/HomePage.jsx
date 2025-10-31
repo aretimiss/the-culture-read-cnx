@@ -6,6 +6,7 @@ import SiteHeader from "../components/SiteHeader";
 import ParallaxHero from "../components/ParallaxHero";
 import Footer from "../components/Footer";
 import AutoCarousel from "../components/AutoCarousel";
+import ManuscriptCard from "../components/ManuscriptCard"; // ✅ เพิ่ม
 
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,9 +18,7 @@ import { pickLang } from "../lib/i18nPick";
 function TitleTicker({ items = [], titleOfItem, onClick }) {
   if (!items?.length) {
     return (
-      <div className="w-full py-2 text-center text-sm text-black/50">
-        —
-      </div>
+      <div className="w-full py-2 text-center text-sm text-black/50">—</div>
     );
   }
   return (
@@ -83,7 +82,7 @@ export default function HomePage() {
         const [bks, manus, arts] = await Promise.all([
           fetchItemsLite({ limit: 12, sortBy: "created", sortOrder: "desc", resource_class_label: "Book" }),
           fetchItemsLite({ limit: 12, sortBy: "created", sortOrder: "desc", resource_class_label: "Manuscript" }),
-          fetchItemsLite({ limit: 8,  sortBy: "created", sortOrder: "desc", resource_class_label: "Article" }), // ถ้าใช้ Event/Blog บอกได้
+          fetchItemsLite({ limit: 8,  sortBy: "created", sortOrder: "desc", resource_class_label: "Article" }),
         ]);
 
         setBooks(Array.isArray(bks) ? bks : []);
@@ -137,33 +136,25 @@ export default function HomePage() {
 
           {/* ซ้ายบน: เอกสารโบราณ (Manuscript) + แถบชื่อด้านล่าง */}
           <section className="lg:col-start-1 lg:col-span-2 card-soft flex flex-col">
-            <div className="flex-1 grid place-items-center px-4 py-6 sm:py-10">
-              <div className="text-center max-w-2xl">
+            <div className="flex-1 px-4 py-6 sm:py-10">
+              <div className="text-center max-w-2xl mx-auto">
                 <h2 className="text-2xl sm:text-3xl font-bold text-[#5b4a3e]">
                   แนะนำเอกสารโบราณ (Manuscript)
                 </h2>
                 <p className="mt-2 text-sm sm:text-base text-black/70">
                   ดึงจากคลาส <strong>Manuscript</strong> ใน Omeka S (ล่าสุดก่อน)
                 </p>
+              </div>
 
-                {/* การ์ด 3 ชิ้น (คลิกเปิดอ่าน) */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {(loading || err ? [] : manuscriptsFiltered.slice(0, 3)).map((it) => (
-                    <button
-                      key={it["o:id"]}
-                      onClick={() => openPDF(it)}
-                      className="group border rounded-xl p-3 text-left bg-white/70 hover:bg-white transition shadow-sm"
-                      title={titleOfItem(it)}
-                    >
-                      <div className="font-semibold text-[#5b4a3e] line-clamp-2 group-hover:underline">
-                        {titleOfItem(it) || "—"}
-                      </div>
-                      <div className="mt-1 text-xs text-black/60 line-clamp-3">
-                        {descOfItem(it) || ""}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              {/* ✅ แสดงเฉพาะภาพ 3 รายการ (คลิกแล้วไปอ่าน) */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 justify-items-center">
+                {(loading || err ? [] : manuscriptsFiltered.slice(0, 3)).map((it) => (
+                  <ManuscriptCard
+                    key={it["o:id"]}
+                    item={it}
+                    onClick={() => openPDF(it)}
+                  />
+                ))}
               </div>
             </div>
 
