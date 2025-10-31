@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion"; // ✅ เพิ่มสำหรับ fade transition
 
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
@@ -38,51 +39,86 @@ export default function BookArticlesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       try {
+        setLoading(true); // ✅ fade/skeleton ขณะเปลี่ยนภาษา
         const res = await fetchItemsLite({
           limit: 36,
           sortBy: "created",
           sortOrder: "desc",
         });
 
-        // ✅ เงื่อนไขเดิม: ต้องมี description อย่างน้อยหนึ่งภาษา
-        // ใช้ descOf() เพื่อดึงตามภาษาในระบบ (รองรับ fallback)
         const filtered = (res || []).filter((it) => {
           const desc = descOf(it);
           return typeof desc === "string" && desc.trim().length > 0;
         });
 
-        setBooks(filtered);
+        if (alive) setBooks(filtered);
       } catch (e) {
         console.error("โหลดรายการล้มเหลว", e);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
-  }, [i18n.language]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen text-[#111518]">
-        <SiteHeader />
-        <main className="pt-28 grid place-items-center text-[#7b6c61]">
-          {t("status.loading", "กำลังโหลด…")}
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+    return () => {
+      alive = false;
+    };
+  }, [i18n.language]); // ✅ โหลดใหม่เมื่อเปลี่ยนภาษา
 
   return (
-    <div className="min-h-screen text-[#111518]">
+    <div className="min-h-screen text-[#111518] relative">
       <SiteHeader />
-      <FullscreenHeroCarousel items={books} />
+
+      {/* ✅ Fade-in/out transition */}
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.main
+            key="loading"
+            className="pt-28 grid place-items-center text-[#7b6c61] relative z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <SkeletonLoader />
+          </motion.main>
+        ) : (
+          <motion.div
+            key={i18n.language}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <FullscreenHeroCarousel items={books} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <BackToTop />
+      <Footer />
     </div>
   );
 }
 
+/* ===== Skeleton Loader (แบบจาง ๆ และ responsive) ===== */
+function SkeletonLoader() {
+  return (
+    <div className="flex flex-col items-center gap-6 animate-pulse">
+      <div className="h-8 w-48 bg-[#e5d7ca]/50 rounded-full" />
+      <div className="h-6 w-60 bg-[#e5d7ca]/40 rounded-full" />
+      <div className="h-5 w-72 bg-[#e5d7ca]/30 rounded-full" />
+      <div className="mt-8 flex gap-3">
+        <div className="h-40 w-28 bg-[#e5d7ca]/40 rounded-lg" />
+        <div className="h-40 w-28 bg-[#e5d7ca]/40 rounded-lg" />
+        <div className="h-40 w-28 bg-[#e5d7ca]/40 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+/* ===== Carousel หลัก ===== */
 function FullscreenHeroCarousel({ items = [] }) {
   const { t } = useTranslation();
   const trackRef = useRef(null);
@@ -129,7 +165,6 @@ function FullscreenHeroCarousel({ items = [] }) {
     return () => window.removeEventListener("keydown", h);
   }, [index, items.length]);
 
-  // ✅ ใช้ descOf() และ titleOf() ดึงค่าตามภาษา
   const slides = useMemo(
     () =>
       items.map((book, i) => {
@@ -158,7 +193,7 @@ function FullscreenHeroCarousel({ items = [] }) {
             className="snap-start w-full relative overflow-hidden"
             style={slideStyle}
           >
-            {/* ===== MOBILE (<= md) ===== */}
+            {/* MOBILE */}
             <div className="md:hidden relative h-full" style={{ color: text }}>
               <div className="absolute inset-x-0 top-[10dvh] bottom-[22dvh]">
                 <div className="relative h-full w-full">
@@ -167,7 +202,6 @@ function FullscreenHeroCarousel({ items = [] }) {
                     alt={title}
                     className="absolute inset-0 mx-auto h-full max-h-[62dvh] object-contain drop-shadow-2xl"
                     loading="lazy"
-                    decoding="async"
                   />
                   <div className="absolute left-1/2 -translate-x-1/2 bottom-[-10px] h-9 w-[70%] rounded-full bg-black/25 blur-xl opacity-40" />
                 </div>
@@ -189,7 +223,7 @@ function FullscreenHeroCarousel({ items = [] }) {
               </button>
             </div>
 
-            {/* ===== DESKTOP (md+) ===== */}
+            {/* DESKTOP */}
             <div
               className="hidden md:grid h-full max-w-[1200px] mx-auto px-6 lg:px-8 grid-cols-2 gap-8 items-center"
               style={{ color: text }}
@@ -197,9 +231,7 @@ function FullscreenHeroCarousel({ items = [] }) {
               <div className="drop-shadow-[0_1px_0_rgba(0,0,0,0.1)]">
                 <h2
                   className="font-extrabold leading-[0.95]"
-                  style={{
-                    fontSize: "clamp(2.2rem, 4vw + 1.5rem, 6rem)",
-                  }}
+                  style={{ fontSize: "clamp(2.2rem, 4vw + 1.5rem, 6rem)" }}
                 >
                   {title}
                 </h2>
@@ -244,7 +276,6 @@ function FullscreenHeroCarousel({ items = [] }) {
                     alt={title}
                     className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl"
                     loading="lazy"
-                    decoding="async"
                   />
                   <div className="absolute -bottom-6 inset-x-0 mx-auto h-10 w-4/5 rounded-full bg-black/20 blur-xl opacity-40" />
                 </div>
@@ -269,7 +300,14 @@ function FullscreenHeroCarousel({ items = [] }) {
   const { bg } = BG_PALETTE[index % BG_PALETTE.length];
 
   return (
-    <div className="relative z-10" style={{ ...slideStyle }}>
+    <motion.div
+      className="relative z-10"
+      style={{ ...slideStyle }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6 }}
+    >
       <div
         className="fixed inset-0 z-0"
         style={{
@@ -277,7 +315,6 @@ function FullscreenHeroCarousel({ items = [] }) {
           transition: "background 500ms ease",
         }}
       />
-
       <div
         ref={trackRef}
         onScroll={onScroll}
@@ -288,6 +325,6 @@ function FullscreenHeroCarousel({ items = [] }) {
           {slides}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
