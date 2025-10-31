@@ -208,21 +208,21 @@ export default function HomePage() {
               className="relative rounded-xl overflow-hidden ring-1 ring-black/5 bg-white"
             >
               <div
-                className="aspect-[4/3] w-50% cursor-pointer"
+                className="aspect-video w-full cursor-pointer"
 
                 onClick={() => currentMs && openPDF(currentMs)}
               >
                 {loading ? (
-                  <div className="w-full h-full animate-pulse bg-neutral-100" />
+                  <div className="w-full animate-pulse bg-neutral-100" />
                 ) : currentThumb ? (
                   <img
                     src={currentThumb}
                     alt={titleOfItem(currentMs) || ""}
-                    className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-[1.02]"
+                    className="w-full  object-cover object-center transition-transform duration-300 hover:scale-[1.02]"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full grid place-items-center text-black/40 text-sm">
+                  <div className="w-full grid place-items-center text-black/40 text-sm">
                     ไม่มีภาพ
                   </div>
                 )}
@@ -326,7 +326,7 @@ export default function HomePage() {
               title="แนะนำหนังสือ (ล่าสุด)"
               items={loading || err ? [] : booksFiltered /* <= 3 เล่ม */}
               onOpen={openPDF}
-              className="h-[420px] sm:h-[520px] lg:h-[560px]"
+              className="h-full"
             />
             {!loading && !err && booksFiltered.length === 0 && (
               <p className="px-5 pb-6 text-center text-sm text-black/60">ยังไม่มีรายการหนังสือที่จะแสดง</p>
