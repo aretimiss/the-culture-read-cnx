@@ -37,13 +37,16 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  // ใช้ภาษาหลัก (ตัด region ออก เช่น th-TH -> th)
+  const langBase = (i18n.language || "th").split("-")[0];
+
   // multi-lang title/desc
-  const titleOfItem = (it) => pickLang(it?.["dcterms:title"], i18n.language) || "";
-  const descOfItem = (it) => pickLang(it?.["dcterms:description"], i18n.language) || "";
+  const titleOfItem = (it) => pickLang(it?.["dcterms:title"], langBase) || "";
+  const descOfItem = (it) => pickLang(it?.["dcterms:description"], langBase) || "";
 
   const openPDF = (item) => {
     const id = item?.["o:id"];
-    if (!id) return alert(t("errors.noId", "ไม่พบรหัสรายการ"));
+    if (!id) return alert(t("errors.noId"));
     navigate(`/read/${id}`);
   };
 
@@ -73,12 +76,12 @@ export default function HomePage() {
         setManuscripts(Array.isArray(manus) ? manus : []);
         setArticles(Array.isArray(arts) ? arts : []);
       } catch (e) {
-        setErr(e?.message || t("errors.loadFailed", "โหลดข้อมูลไม่สำเร็จ"));
+        setErr(e?.message || t("errors.loadFailed"));
       } finally {
         setLoading(false);
       }
     })();
-  }, [i18n.language]);
+  }, [i18n.language]); // เปลี่ยนภาษาแล้วโหลดใหม่
 
   // filter in-page
   const filterByQuery = (arr) => {
@@ -149,21 +152,21 @@ export default function HomePage() {
     if (e.key === "ArrowRight") nextMs();
   };
 
-  // fields (ไม่ใช้ description)
+  // fields (ยังไม่ใช้แสดงผล แต่เผื่ออนาคต)
   const manuFields = useMemo(() => {
     const it = currentMs || {};
-    const lang = i18n.language;
+    const lang = langBase;
     const joiner = (arr) => (arr && arr.length ? arr.join(", ") : "—");
     return [
-      { label: "ผู้สร้าง/ผู้เขียน", value: joiner(getLangVals(it, "dcterms:creator", lang) || getVals(it, "dcterms:creator")) },
-      { label: "ปีที่จัดทำ/เผยแพร่", value: joiner(getVals(it, "dcterms:date")) },
-      { label: "ภาษา", value: joiner(getVals(it, "dcterms:language")) },
-      { label: "หัวเรื่อง", value: joiner(getLangVals(it, "dcterms:subject", lang) || getVals(it, "dcterms:subject")) },
-      { label: "สถานที่", value: joiner(getLangVals(it, "dcterms:spatial", lang) || getVals(it, "dcterms:spatial")) },
-      { label: "สำนักพิมพ์/ผู้ให้ข้อมูล", value: joiner(getLangVals(it, "dcterms:publisher", lang) || getVals(it, "dcterms:publisher")) },
-      { label: "รหัสรายการ", value: it?.["o:id"] ?? "—" },
+      { label: t("book.author"), value: joiner(getLangVals(it, "dcterms:creator", lang) || getVals(it, "dcterms:creator")) },
+      { label: t("book.published"), value: joiner(getVals(it, "dcterms:date")) },
+      { label: t("book.language"), value: joiner(getVals(it, "dcterms:language")) },
+      { label: t("sections.rareBooks"), value: joiner(getLangVals(it, "dcterms:subject", lang) || getVals(it, "dcterms:subject")) },
+      { label: t("book.details"), value: joiner(getLangVals(it, "dcterms:spatial", lang) || getVals(it, "dcterms:spatial")) },
+      { label: t("book.publisher"), value: joiner(getLangVals(it, "dcterms:publisher", lang) || getVals(it, "dcterms:publisher")) },
+      { label: "ID", value: it?.["o:id"] ?? "—" },
     ];
-  }, [currentMs, i18n.language]);
+  }, [currentMs, langBase, t]);
 
   return (
     <div
@@ -181,17 +184,16 @@ export default function HomePage() {
       <ParallaxHero
         banner=""
         onSearch={setQuery}
-        searchPlaceholder={t("search.placeholder", "ค้นหาหนังสือ/คำอธิบาย…")}
+        searchPlaceholder={t("search.placeholder")}
       />
 
-      {/* ===== Layout ใหม่ แบบมินิมอล: แถวบน (Manuscript 2col) + แถวล่าง (บทความ | หนังสือ) ===== */}
+      {/* ===== Layout: Manuscripts + (Articles | Books) ===== */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8 sm:py-12 space-y-10">
-        {/* MANUSCRIPTS */}
         {/* ===== MANUSCRIPTS (Full Image Clickable) ===== */}
         <section className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
           <div className="px-5 pt-6 pb-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#5b4a3e] text-center">
-              แนะนำเอกสารโบราณ (Manuscript)
+              {t("sections.ancientDocs")}
             </h2>
           </div>
 
@@ -204,26 +206,25 @@ export default function HomePage() {
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
               aria-roledescription="carousel"
-              aria-label="Manuscript carousel"
+              aria-label={t("sections.ancientDocs")}
               className="relative rounded-xl overflow-hidden ring-1 ring-black/5 bg-white"
             >
               <div
                 className="aspect-video w-full cursor-pointer"
-
                 onClick={() => currentMs && openPDF(currentMs)}
               >
                 {loading ? (
-                  <div className="w-full animate-pulse bg-neutral-100" />
+                  <div className="w-full h-full animate-pulse bg-neutral-100" aria-label={t("status.loading")} />
                 ) : currentThumb ? (
                   <img
                     src={currentThumb}
                     alt={titleOfItem(currentMs) || ""}
-                    className="w-full  object-cover object-center transition-transform duration-300 hover:scale-[1.02]"
+                    className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-[1.02]"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full grid place-items-center text-black/40 text-sm">
-                    ไม่มีภาพ
+                  <div className="w-full h-full grid place-items-center text-black/40 text-sm">
+                    {t("common.noImage")}
                   </div>
                 )}
               </div>
@@ -234,7 +235,7 @@ export default function HomePage() {
                   type="button"
                   onClick={prevMs}
                   className="pointer-events-auto h-10 w-10 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center outline-none focus:ring-2 focus:ring-white/80"
-                  aria-label="ก่อนหน้า"
+                  aria-label={t("carousel.prev")}
                 >
                   ‹
                 </button>
@@ -242,7 +243,7 @@ export default function HomePage() {
                   type="button"
                   onClick={nextMs}
                   className="pointer-events-auto h-10 w-10 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center outline-none focus:ring-2 focus:ring-white/80"
-                  aria-label="ถัดไป"
+                  aria-label={t("carousel.next")}
                 >
                   ›
                 </button>
@@ -258,7 +259,7 @@ export default function HomePage() {
                     className={`h-2.5 w-2.5 rounded-full outline-none focus:ring-2 focus:ring-white/80 ${
                       i === msIndex ? "bg-white" : "bg-white/50 hover:bg-white/80"
                     }`}
-                    aria-label={`ไปสไลด์ที่ ${i + 1}`}
+                    aria-label={t("carousel.goToSlide", { n: i + 1 })}
                     aria-current={i === msIndex ? "true" : "false"}
                   />
                 ))}
@@ -267,17 +268,16 @@ export default function HomePage() {
           </div>
         </section>
 
-
-        {/* BOTTOM ROW: Articles | Books */}
+        {/* ===== BOTTOM ROW: Articles | Books ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Articles */}
           <section className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
             <div className="px-5 pt-6 pb-2">
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#5b4a3e] text-center">
-                บทความ / กิจกรรม
+                {t("sections.activities")}
               </h2>
               <p className="text-center mt-2 text-sm sm:text-base text-black/70">
-                โชว์รายการล่าสุดจากคลาส <strong>Article</strong>
+                {t("sections.activitiesDesc")}
               </p>
             </div>
 
@@ -295,8 +295,8 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-              ) : (articlesFiltered.slice(0, 6).length === 0) ? (
-                <p className="text-center text-sm text-black/60">ยังไม่มีบทความที่จะแสดง</p>
+              ) : articlesFiltered.slice(0, 6).length === 0 ? (
+                <p className="text-center text-sm text-black/60">{t("common.emptyArticles")}</p>
               ) : (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {articlesFiltered.slice(0, 6).map((it) => (
@@ -323,13 +323,14 @@ export default function HomePage() {
           {/* Books carousel (3 เล่มล่าสุด) */}
           <aside className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
             <AutoCarousel
-              title="แนะนำหนังสือ (ล่าสุด)"
+              title={t("sections.recommendBooks")}
               items={loading || err ? [] : booksFiltered /* <= 3 เล่ม */}
               onOpen={openPDF}
-              className="h-80%"
+              // เดิมใช้ h-80% ซึ่งไม่ใช่คลาสของ Tailwind → ใช้ความสูงที่ชัดเจนแทน
+              className="h-[620px] sm:h-[680px] lg:h-[740px]"
             />
             {!loading && !err && booksFiltered.length === 0 && (
-              <p className="px-5 pb-6 text-center text-sm text-black/60">ยังไม่มีรายการหนังสือที่จะแสดง</p>
+              <p className="px-5 pb-6 text-center text-sm text-black/60">{t("common.emptyBooks")}</p>
             )}
           </aside>
         </div>
