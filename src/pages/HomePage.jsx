@@ -327,7 +327,7 @@ export default function HomePage() {
               items={loading || err ? [] : booksFiltered /* <= 3 เล่ม */}
               onOpen={openPDF}
               // เดิมใช้ h-80% ซึ่งไม่ใช่คลาสของ Tailwind → ใช้ความสูงที่ชัดเจนแทน
-              className="h-[620px] sm:h-[680px] lg:h-[740px]"
+              className="h-70%"
             />
             {!loading && !err && booksFiltered.length === 0 && (
               <p className="px-5 pb-6 text-center text-sm text-black/60">{t("common.emptyBooks")}</p>
