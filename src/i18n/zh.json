@@ -61,5 +61,24 @@
     "readNowTitle": "现在开始阅读此书",
     "readNowDesc": "点击打开阅读器",
     "type": "图书"
+  },
+  "footer": {
+    "title": "Culture Read @CNX",
+    "tagline": "泰国—老挝—菲律宾联合数字图书馆，通过阅读保护与传播文化遗产。",
+    "links": { "facebook": "Facebook", "mainSite": "主网站" },
+    "sections": {
+      "about": {
+        "title": "关于",
+        "mission": "项目与使命",
+        "partners": "合作图书馆",
+        "contact": "联系"
+      },
+      "resources": {
+        "title": "资源",
+        "allBooks": "全部图书",
+        "articles": "精选文章"
+      }
+    },
+    "copyright": "© {{year}} Culture Read @CNX — 与清迈国家图书馆合作。保留所有权利。"
   }
 }

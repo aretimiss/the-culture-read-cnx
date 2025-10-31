@@ -61,5 +61,24 @@
     "readNowTitle": "Read the book now",
     "readNowDesc": "Dive into the work instantly.",
     "type": "Book"
+  },
+  "footer": {
+    "title": "Culture Read @CNX",
+    "tagline": "A collaborative digital library by Thailand–Laos–Philippines to preserve and share cultural heritage through reading.",
+    "links": { "facebook": "Facebook", "mainSite": "Main website" },
+    "sections": {
+      "about": {
+        "title": "About",
+        "mission": "Mission & Project",
+        "partners": "Library Partners",
+        "contact": "Contact"
+      },
+      "resources": {
+        "title": "Resources",
+        "allBooks": "All Books",
+        "articles": "Featured Articles"
+      }
+    },
+    "copyright": "© {{year}} Culture Read @CNX — A collaborative project with Chiang Mai National Library. All rights reserved."
   }
 }

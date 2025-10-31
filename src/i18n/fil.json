@@ -61,5 +61,24 @@
     "readNowTitle": "Basahin ang aklat ngayon",
     "readNowDesc": "Pindutin upang buksan ang reader.",
     "type": "Aklat"
+  },
+  "footer": {
+    "title": "Culture Read @CNX",
+    "tagline": "Isang kolaboratibong digital library ng Thailand–Laos–Pilipinas para sa pag-iingat at pagbabahagi ng pamanang pangkultura sa pamamagitan ng pagbasa.",
+    "links": { "facebook": "Facebook", "mainSite": "Pangunahing website" },
+    "sections": {
+      "about": {
+        "title": "Tungkol",
+        "mission": "Misyon at Proyekto",
+        "partners": "Mga Kapanalig na Aklatan",
+        "contact": "Makipag-ugnayan"
+      },
+      "resources": {
+        "title": "Mga Sanggunian",
+        "allBooks": "Lahat ng Aklat",
+        "articles": "Mga Itinatampok na Artikulo"
+      }
+    },
+    "copyright": "© {{year}} Culture Read @CNX — Kolaborasyon kasama ang Chiang Mai National Library. Lahat ng karapatan ay nakalaan."
   }
 }

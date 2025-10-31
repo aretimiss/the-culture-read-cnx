@@ -1,6 +1,7 @@
 // src/components/BookCard.jsx
 import React, { useEffect, useState } from "react";
-import { titleOf, thumbUrlOf } from "../lib/omekaClient"; // ✅ ใช้เฉพาะ helper รูป/ชื่อ
+import { titleOf, thumbUrlOf } from "../lib/omekaClient";
+import { useTranslation } from "react-i18next";
 
 /** --- Placeholder fallback --- */
 function CoverPlaceholder({ label = "No cover" }) {
@@ -22,7 +23,14 @@ function CoverPlaceholder({ label = "No cover" }) {
 }
 
 /** --- การ์ดหนังสือ --- */
-export default function BookCard({ item, onOpen, compact = false }) {
+export default function BookCard({
+  item,
+  onOpen,
+  compact = false,
+  titleOverride,
+  descOverride,
+}) {
+  const { t, i18n } = useTranslation();
   const [imgUrl, setImgUrl] = useState(null);
   const [hasImg, setHasImg] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,12 +54,16 @@ export default function BookCard({ item, onOpen, compact = false }) {
       }
     })();
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [item]);
 
-  const title = titleOf(item);
+  // ✅ ชื่อหนังสือ: ใช้ props ถ้ามี, ถ้าไม่มี fallback ไป titleOf()
+  const title = titleOverride || titleOf(item) || t("books.untitled", "ไม่มีชื่อเรื่อง");
+  const desc = descOverride || "";
 
-  // ใช้ฟังก์ชันกลางในการเปิด (เรียก onOpen เท่านั้น)
+  // ✅ ฟังก์ชันเปิดอ่าน
   const handleOpen = () => {
     if (onOpen) return onOpen(item);
     console.warn("BookCard: onOpen is not provided. No navigation performed.");
@@ -63,11 +75,11 @@ export default function BookCard({ item, onOpen, compact = false }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="flex gap-3 w-full text-left hover:bg-black/5 rounded-xl p-2"
+        className="flex gap-3 w-full text-left hover:bg-black/5 rounded-xl p-2 transition"
       >
         <div className="w-16 h-24 rounded-lg overflow-hidden bg-black/5 flex-none">
           {loading ? (
-            <div className="w-full h-full skeleton" />
+            <div className="w-full h-full animate-pulse bg-black/10" />
           ) : hasImg ? (
             <img
               src={imgUrl}
@@ -83,7 +95,7 @@ export default function BookCard({ item, onOpen, compact = false }) {
         </div>
         <div className="flex-1">
           <div className="font-semibold leading-snug line-clamp-2">{title}</div>
-          <div className="text-sm opacity-60">คลิกเพื่อเปิดอ่าน</div>
+          <div className="text-sm opacity-60">{t("actions.open", "คลิกเพื่อเปิดอ่าน")}</div>
         </div>
       </button>
     );
@@ -98,7 +110,7 @@ export default function BookCard({ item, onOpen, compact = false }) {
     >
       <div className="aspect-[3/4] bg-black/5">
         {loading ? (
-          <div className="w-full h-full skeleton" />
+          <div className="w-full h-full animate-pulse bg-black/10" />
         ) : hasImg ? (
           <img
             src={imgUrl}
@@ -114,7 +126,12 @@ export default function BookCard({ item, onOpen, compact = false }) {
       </div>
       <div className="p-3">
         <h4 className="font-bold leading-snug line-clamp-2">{title}</h4>
-        <div className="mt-1 text-sm opacity-60">คลิกเพื่อเปิดอ่าน</div>
+        {desc && (
+          <p className="text-sm opacity-70 line-clamp-2 mt-1">{desc}</p>
+        )}
+        <div className="mt-1 text-sm opacity-60">
+          {t("actions.open", "คลิกเพื่อเปิดอ่าน")}
+        </div>
       </div>
     </button>
   );
