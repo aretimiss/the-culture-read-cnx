@@ -326,7 +326,7 @@ export default function HomePage() {
               title="แนะนำหนังสือ (ล่าสุด)"
               items={loading || err ? [] : booksFiltered /* <= 3 เล่ม */}
               onOpen={openPDF}
-              className="h-full"
+              className="h-80%"
             />
             {!loading && !err && booksFiltered.length === 0 && (
               <p className="px-5 pb-6 text-center text-sm text-black/60">ยังไม่มีรายการหนังสือที่จะแสดง</p>
