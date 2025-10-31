@@ -11,8 +11,8 @@ export default function Footer() {
     <footer className="bg-white border-t border-gray-200 px-4 sm:px-10 lg:px-40 py-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="flex flex-col gap-4">
-          <h3 className="text-[#111518] text-lg font-bold">The Culture Read @CNX</h3>
-          <p className="text-[#637c88] text-sm">© 2025 The Culture Read @CNX. All rights reserved.</p>
+          <h3 className="text-[#111518] text-lg font-bold">Culture Read @CNX</h3>
+          <p className="text-[#637c88] text-sm">© 2025 Culture Read @CNX. All rights reserved.</p>
         </div>
         <div className="flex flex-col gap-3">
           <h4 className="font-semibold">หัวข้อ 1</h4>
