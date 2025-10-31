@@ -23,10 +23,9 @@ export default function ManuscriptCard({ item, onClick }) {
     >
       {thumb ? (
         <img
-          src={thumb}
-          alt=""
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
+        src={thumb}
+        alt=""
+        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
       ) : (
         <div className="w-full h-full grid place-items-center bg-gray-100 text-gray-400 text-sm">
