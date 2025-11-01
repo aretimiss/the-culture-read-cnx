@@ -6,6 +6,7 @@ import SiteHeader from "../components/SiteHeader";
 import ParallaxHero from "../components/ParallaxHero";
 import Footer from "../components/Footer";
 import AutoCarousel from "../components/AutoCarousel";
+import ArticlesBlock from "../components/ArticlesBlock"; // ✅ เพิ่ม
 
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -51,7 +52,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    // background-attachment fix (iOS)
+    // iOS background-attachment fix
     const mq = window.matchMedia("(max-width: 767px)");
     const apply = () =>
       document.documentElement.style.setProperty("--bg-attach", mq.matches ? "scroll" : "fixed");
@@ -61,27 +62,64 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setErr("");
+  (async () => {
+    try {
+      setLoading(true);
+      setErr("");
 
-        const [bks, manus, arts] = await Promise.all([
-          fetchItemsLite({ limit: 12, sortBy: "created", sortOrder: "desc", resource_class_label: "Book" }),
-          fetchItemsLite({ limit: 16, sortBy: "created", sortOrder: "desc", resource_class_label: "Manuscript" }),
-          fetchItemsLite({ limit: 12, sortBy: "created", sortOrder: "desc", resource_class_label: "Article" }),
+      // 1) ลองดึงแบบตรงๆ ตามที่ตั้งใจ
+      const [bks, manus, artsTry1] = await Promise.all([
+        fetchItemsLite({ limit: 12, sortBy: "created", sortOrder: "desc", resource_class_label: "Book" }),
+        fetchItemsLite({ limit: 16, sortBy: "created", sortOrder: "desc", resource_class_label: "Manuscript" }),
+        fetchItemsLite({ limit: 24, sortBy: "created", sortOrder: "desc", resource_class_label: "Article" }),
+      ]);
+
+      // 2) ถ้า "Article" ว่าง ให้ลองสำรองด้วย resource_template_label บางชื่อที่พบบ่อย
+      let arts = Array.isArray(artsTry1) ? artsTry1 : [];
+      if (!arts.length) {
+        const [tryTpl1, tryTpl2] = await Promise.all([
+          // ปรับชื่อ template ให้ตรงกับที่คุณใช้จริงได้ เช่น "Article/Review", "กิจกรรม/บทความ"
+          fetchItemsLite({ limit: 24, sortBy: "created", sortOrder: "desc", resource_template_label: "Article/Review" }),
+          fetchItemsLite({ limit: 24, sortBy: "created", sortOrder: "desc", resource_template_label: "Article" }),
         ]);
-
-        setBooks(Array.isArray(bks) ? bks : []);
-        setManuscripts(Array.isArray(manus) ? manus : []);
-        setArticles(Array.isArray(arts) ? arts : []);
-      } catch (e) {
-        setErr(e?.message || t("errors.loadFailed"));
-      } finally {
-        setLoading(false);
+        arts = [...(tryTpl1 || []), ...(tryTpl2 || [])];
       }
-    })();
-  }, [i18n.language]); // เปลี่ยนภาษาแล้วโหลดใหม่
+
+      // 3) ถ้ายังว่างอีก ให้ fallback เป็น "ล่าสุดทั้งหมด" แล้วกรอง client-side แบบเดาอย่างปลอดภัย
+      if (!arts.length) {
+        const latest = await fetchItemsLite({ limit: 60, sortBy: "created", sortOrder: "desc" });
+
+        const looksLikeArticle = (it) => {
+          const cls = it?.["o:resource_class"]?.["o:label"]?.toLowerCase?.() || "";
+          if (cls.includes("article")) return true;
+
+          // ดูจาก dcterms:type ที่มักจะกรอกระบุว่า "บทความ", "กิจกรรม", "ข่าว", ฯลฯ
+          const types = Array.isArray(it?.["dcterms:type"])
+            ? it["dcterms:type"].map((v) => (v?.["@value"] || "").toLowerCase())
+            : [];
+          if (types.some((s) => /article|บทความ|ข่าว|กิจกรรม|activity|news/i.test(s))) return true;
+
+          // ถ้ามีคำอธิบาย แต่ไม่ใช่ Book/Manuscript ก็นับเป็นบทความ (heuristic)
+          const hasDesc = Array.isArray(it?.["dcterms:description"]) && it["dcterms:description"].length > 0;
+          const isBook = (cls.includes("book"));
+          const isManuscript = (cls.includes("manuscript"));
+          return hasDesc && !isBook && !isManuscript;
+        };
+
+        arts = (latest || []).filter(looksLikeArticle).slice(0, 24);
+      }
+
+      setBooks(Array.isArray(bks) ? bks : []);
+      setManuscripts(Array.isArray(manus) ? manus : []);
+      setArticles(Array.isArray(arts) ? arts : []);
+    } catch (e) {
+      setErr(e?.message || t("errors.loadFailed"));
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [i18n.language]);
+
 
   // filter in-page
   const filterByQuery = (arr) => {
@@ -94,7 +132,7 @@ export default function HomePage() {
     });
   };
 
-  const booksFiltered = useMemo(() => filterByQuery(books).slice(0, 3), [books, query, i18n.language]); // ✅ 3 เล่มล่าสุด
+  const booksFiltered = useMemo(() => filterByQuery(books).slice(0, 3), [books, query, i18n.language]); // 3 เล่มล่าสุด
   const manuscriptsFiltered = useMemo(
     () => filterByQuery(manuscripts).slice(0, 12),
     [manuscripts, query, i18n.language]
@@ -104,9 +142,8 @@ export default function HomePage() {
     [articles, query, i18n.language]
   );
 
-  /** ---------- สไลด์ฝั่ง Manuscript: ปัดได้ / ลูกศรคีย์บอร์ด / โฟกัสได้ ---------- */
+  /** ---------- สไลด์ Manuscript (คลิกทั้งภาพ/คีย์บอร์ด/ปัดได้) ---------- */
   const [msIndex, setMsIndex] = useState(0);
-  useEffect(() => setMsIndex(0), [manuscriptsFiltered.length]); // รีเซ็ตเมื่อรายการเปลี่ยน
   const currentMs = manuscriptsFiltered[msIndex];
 
   const [currentThumb, setCurrentThumb] = useState(null);
@@ -152,22 +189,6 @@ export default function HomePage() {
     if (e.key === "ArrowRight") nextMs();
   };
 
-  // fields (ยังไม่ใช้แสดงผล แต่เผื่ออนาคต)
-  const manuFields = useMemo(() => {
-    const it = currentMs || {};
-    const lang = langBase;
-    const joiner = (arr) => (arr && arr.length ? arr.join(", ") : "—");
-    return [
-      { label: t("book.author"), value: joiner(getLangVals(it, "dcterms:creator", lang) || getVals(it, "dcterms:creator")) },
-      { label: t("book.published"), value: joiner(getVals(it, "dcterms:date")) },
-      { label: t("book.language"), value: joiner(getVals(it, "dcterms:language")) },
-      { label: t("sections.rareBooks"), value: joiner(getLangVals(it, "dcterms:subject", lang) || getVals(it, "dcterms:subject")) },
-      { label: t("book.details"), value: joiner(getLangVals(it, "dcterms:spatial", lang) || getVals(it, "dcterms:spatial")) },
-      { label: t("book.publisher"), value: joiner(getLangVals(it, "dcterms:publisher", lang) || getVals(it, "dcterms:publisher")) },
-      { label: "ID", value: it?.["o:id"] ?? "—" },
-    ];
-  }, [currentMs, langBase, t]);
-
   return (
     <div
       className="min-h-screen text-[#111518]"
@@ -189,7 +210,7 @@ export default function HomePage() {
 
       {/* ===== Layout: Manuscripts + (Articles | Books) ===== */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8 sm:py-12 space-y-10">
-        {/* ===== MANUSCRIPTS (Full Image Clickable) ===== */}
+        {/* MANUSCRIPTS */}
         <section className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
           <div className="px-5 pt-6 pb-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#5b4a3e] text-center">
@@ -270,64 +291,23 @@ export default function HomePage() {
 
         {/* ===== BOTTOM ROW: Articles | Books ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Articles */}
-          <section className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
-            <div className="px-5 pt-6 pb-2">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#5b4a3e] text-center">
-                {t("sections.activities")}
-              </h2>
-              <p className="text-center mt-2 text-sm sm:text-base text-black/70">
-                {t("sections.activitiesDesc")}
-              </p>
-            </div>
-
-            <div className="px-5 pb-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="border rounded-xl p-4 bg-white ring-1 ring-black/5">
-                      <div className="h-5 bg-neutral-100 animate-pulse rounded w-2/3" />
-                      <div className="mt-3 space-y-2">
-                        <div className="h-3 bg-neutral-100 animate-pulse rounded" />
-                        <div className="h-3 bg-neutral-100 animate-pulse rounded w-5/6" />
-                        <div className="h-3 bg-neutral-100 animate-pulse rounded w-4/6" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : articlesFiltered.slice(0, 6).length === 0 ? (
-                <p className="text-center text-sm text-black/60">{t("common.emptyArticles")}</p>
-              ) : (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {articlesFiltered.slice(0, 6).map((it) => (
-                    <button
-                      key={it["o:id"]}
-                      type="button"
-                      onClick={() => openPDF(it)}
-                      className="group border rounded-xl p-4 bg-white hover:bg-neutral-50 text-left transition shadow-sm ring-1 ring-black/5 outline-none focus-visible:ring-2 focus-visible:ring-[#111518]/20"
-                      title={titleOfItem(it)}
-                    >
-                      <div className="font-semibold text-[#111518] line-clamp-2 group-hover:underline">
-                        {titleOfItem(it) || "—"}
-                      </div>
-                      <div className="mt-2 text-xs text-black/60 line-clamp-3">
-                        {descOfItem(it) || ""}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+          {/* Articles block (คอมโพเนนต์ใหม่) */}
+          <ArticlesBlock
+            title={t("sections.activities")}
+            desc={t("sections.activitiesDesc")}
+            items={articlesFiltered}
+            loading={loading}
+            err={err}
+            onOpen={openPDF}
+          />
 
           {/* Books carousel (3 เล่มล่าสุด) */}
           <aside className="rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm ring-1 ring-black/5">
             <AutoCarousel
               title={t("sections.recommendBooks")}
-              items={loading || err ? [] : booksFiltered /* <= 3 เล่ม */}
+              items={loading || err ? [] : booksFiltered}
               onOpen={openPDF}
-              // เดิมใช้ h-80% ซึ่งไม่ใช่คลาสของ Tailwind → ใช้ความสูงที่ชัดเจนแทน
-              className="h-70%"
+              className="h-[70vh] "
             />
             {!loading && !err && booksFiltered.length === 0 && (
               <p className="px-5 pb-6 text-center text-sm text-black/60">{t("common.emptyBooks")}</p>
