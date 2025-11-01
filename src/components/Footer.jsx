@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Music } from "lucide-react"; // ✅ เพิ่ม icon TikTok (ใช้ Music เป็นสัญลักษณ์)
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export default function Footer() {
           </p>
 
           <div className="flex items-center gap-3 mt-2">
+            {/* Facebook */}
             <a
               href="https://www.facebook.com/nl.chiangmai"
               target="_blank"
@@ -34,6 +36,18 @@ export default function Footer() {
               <Facebook size={16} /> {t("footer.links.facebook", "Facebook")}
             </a>
 
+            {/* TikTok */}
+            <a
+              href="https://www.tiktok.com/@nl.cnx?is_from_webapp=1&sender_device=pc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-[#010101] hover:text-[#d8653b] transition-colors"
+              aria-label={t("footer.links.tiktok", "TikTok")}
+            >
+              <Music size={16} /> {t("footer.links.tiktok", "TikTok")}
+            </a>
+
+            {/* Main site */}
             <a
               href="https://www.finearts.go.th/chiangmailibrary"
               target="_blank"
