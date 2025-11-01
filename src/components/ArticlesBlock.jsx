@@ -20,16 +20,15 @@ export default function ArticlesBlock({ title, desc, items = [], loading, err, o
 
   // ---------- MOBILE: index ทีละ 1 ----------
   const [mIndex, setMIndex] = useState(0);
-  const mItems = items.slice(0, 60); // กันยาวเกิน
+  const mItems = items.slice(0, 60);
   const mCurrent = useMemo(() => mItems[mIndex], [mItems, mIndex]);
   const mNext = () => setMIndex((i) => (mItems.length ? (i + 1) % mItems.length : 0));
   const mPrev = () =>
     setMIndex((i) => (mItems.length ? (i - 1 + mItems.length) % mItems.length : 0));
 
-  // ---------- DESKTOP: หน้า (page) ละ 3 ----------
-  // หน้าแรก: 3 รายการล่าสุด (assume items เรียงใหม่→เก่าอยู่แล้วจาก fetch)
-  const PAGE_SIZE = 3;
-  const dItems = items.slice(0, 60); // จำกัดสูงสุดนิดหน่อย
+  // ---------- DESKTOP: หน้า (page) ละ 2 ----------
+  const PAGE_SIZE = 2;
+  const dItems = items.slice(0, 60);
   const totalPages = Math.max(1, Math.ceil(dItems.length / PAGE_SIZE));
 
   const [page, setPage] = useState(0); // 0 = ล่าสุด (หน้าแรก)
@@ -59,7 +58,7 @@ export default function ArticlesBlock({ title, desc, items = [], loading, err, o
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 gap-4"
             >
-              {Array.from({ length: 3 }).map((_, i) => (
+              {Array.from({ length: 2 }).map((_, i) => ( // << 2 แถวให้ตรง PAGE_SIZE
                 <SkeletonRow key={i} />
               ))}
             </motion.div>
@@ -83,7 +82,7 @@ export default function ArticlesBlock({ title, desc, items = [], loading, err, o
             </motion.p>
           ) : (
             <motion.div key={`art-page-${page}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* เดสก์ท็อป: 1 แถว/บทความ, หน้าแรก 3 ชิ้น, กดเปลี่ยนหน้าเพื่อดูเก่า */}
+              {/* เดสก์ท็อป: 1 แถว/บทความ, หน้า/ละ 2 ชิ้น, เพจิเนชัน */}
               <div className="hidden sm:flex flex-col gap-5">
                 {pageItems.map((it, i) => (
                   <ArticleRow
@@ -139,22 +138,24 @@ export default function ArticlesBlock({ title, desc, items = [], loading, err, o
               {/* มือถือ: สไลด์ทีละ 1 + ลูกศร + จุด */}
               <div className="sm:hidden relative">
                 <div className="relative overflow-hidden rounded-xl ring-1 ring-black/5">
-                  <div className="aspect-[16/11] w-full">
+                  {/* สูงขึ้นบนจอเล็ก เพื่อไม่ให้เนื้อหาดันปุ่มหลุดกรอบ */}
+                  <div className="aspect-[4/5] sm:aspect-[16/11] w-full">
                     <MobileArticleSlide item={mCurrent} />
                   </div>
 
-                  <div className="absolute inset-0 flex items-center justify-between px-2">
+                  {/* ลูกศร: ไม่บังองค์ประกอบอื่น */}
+                  <div className="absolute inset-0 flex items-center justify-between px-2 pointer-events-none">
                     <button
                       aria-label={t("carousel.prev")}
                       onClick={mPrev}
-                      className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center"
+                      className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center pointer-events-auto"
                     >
                       ‹
                     </button>
                     <button
                       aria-label={t("carousel.next")}
                       onClick={mNext}
-                      className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center"
+                      className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white grid place-items-center pointer-events-auto"
                     >
                       ›
                     </button>
@@ -209,7 +210,11 @@ function ArticleRow({ item, paletteIndex = 0, onOpen }) {
         <div className="flex-1 p-6 flex flex-col justify-between">
           <div>
             <h3 className="text-xl font-semibold leading-snug">{title}</h3>
-            {desc && <p className="mt-3 text-sm/relaxed opacity-90 max-w-3xl">{desc}</p>}
+            {desc && (
+              <p className="mt-3 text-sm/relaxed opacity-90 max-w-3xl line-clamp-3">
+                {desc}
+              </p>
+            )}
           </div>
 
           <div className="mt-5 flex gap-3 flex-wrap">
@@ -264,11 +269,19 @@ function MobileArticleSlide({ item }) {
   const isLight = text.toLowerCase() === "#ffffff";
 
   return (
-    <div className="w-full h-full p-4" style={{ background: bg, color: text }}>
-      <h3 className="font-semibold line-clamp-2">{title}</h3>
-      {desc && <p className="mt-2 text-sm/relaxed line-clamp-5 opacity-90">{desc}</p>}
+    <div
+      className="w-full h-full p-4 flex flex-col pb-[env(safe-area-inset-bottom)]"
+      style={{ background: bg, color: text }}
+    >
+      <h3 className="font-semibold line-clamp-2 break-words">{title}</h3>
+      {desc && (
+        <p className="mt-2 text-sm leading-relaxed opacity-90 line-clamp-3 md:line-clamp-5 break-words">
+          {desc}
+        </p>
+      )}
 
-      <div className="mt-4 flex gap-2">
+      {/* ตรึงปุ่มไว้ก้นการ์ดเสมอ */}
+      <div className="mt-auto pt-3 flex gap-2">
         <button
           onClick={() => navigate(`/read/${id}`)}
           className={`h-10 px-5 rounded-full text-sm font-semibold shadow ${

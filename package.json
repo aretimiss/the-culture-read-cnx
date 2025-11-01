@@ -25,6 +25,7 @@
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/line-clamp": "^0.4.4",
     "autoprefixer": "^10.4.21",
     "gh-pages": "^6.0.0",
     "netlify-cli": "^23.9.4",

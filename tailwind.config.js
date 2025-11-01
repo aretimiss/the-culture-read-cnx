@@ -28,5 +28,6 @@ module.exports = {
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/container-queries'),
+    require('@tailwindcss/line-clamp'),   // ✅ เพิ่มปลั๊กอินตัดข้อความตามบรรทัด
   ],
 }
